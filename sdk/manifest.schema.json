@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "MangaLaunch source package manifest, API/ABI 1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "extensionId", "version", "publisherKeyId", "sourceApiVersion", "minAppVersion", "minRuntimeAbi", "entrypoint", "license", "sources", "permissions", "files"],
+  "properties": {
+    "schemaVersion": {"const": 1},
+    "extensionId": {"$ref": "#/$defs/id"},
+    "name": {"$ref": "#/$defs/text"},
+    "version": {"$ref": "#/$defs/semver"},
+    "publisherKeyId": {"type": "string", "minLength": 1, "maxLength": 128},
+    "sourceApiVersion": {"const": 1},
+    "minAppVersion": {"$ref": "#/$defs/semver"},
+    "minRuntimeAbi": {"const": 1},
+    "entrypoint": {"type": "string", "maxLength": 240, "pattern": "^[A-Za-z0-9][A-Za-z0-9_./-]*\\.mjs$"},
+    "license": {"type": "string", "minLength": 1, "maxLength": 256},
+    "homepage": {"$ref": "#/$defs/https"},
+    "icon": {"type": "string", "minLength": 1, "maxLength": 240},
+    "permissions": {"type": "array", "uniqueItems": true, "maxItems": 8, "items": {"enum": ["http", "html", "sourceSettings", "sourceSession"]}},
+    "sources": {"type": "array", "minItems": 1, "maxItems": 64, "items": {"$ref": "#/$defs/source"}},
+    "files": {"type": "object", "minProperties": 1, "maxProperties": 128, "additionalProperties": {"type": "object", "additionalProperties": false, "required": ["size", "sha256"], "properties": {"size": {"type": "integer", "minimum": 0, "maximum": 25165824}, "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}}}}
+  },
+  "$defs": {
+    "id": {"type": "string", "maxLength": 128, "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$"},
+    "text": {"type": "string", "minLength": 1, "maxLength": 256, "pattern": "^[^\\u0000-\\u001f\\u007f]+$"},
+    "semver": {"type": "string", "maxLength": 128, "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$"},
+    "https": {"type": "string", "format": "uri", "maxLength": 2048, "pattern": "^https://[^@#]+$"},
+    "origin": {"type": "string", "format": "uri", "maxLength": 2048, "pattern": "^https://[^/?#@]+$"},
+    "origins": {"type": "array", "maxItems": 128, "items": {"$ref": "#/$defs/origin"}},
+    "userAgent": {"enum": ["app", "browser", "senkuro", "mobileSafari"]},
+    "source": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "name", "language", "baseUrl", "engine", "status", "capabilities", "features", "network", "media"],
+      "properties": {
+        "id": {"$ref": "#/$defs/id"}, "name": {"$ref": "#/$defs/text"},
+        "language": {"enum": ["all", "ru", "en"]}, "baseUrl": {"$ref": "#/$defs/https"},
+        "engine": {"$ref": "#/$defs/text"}, "status": {"enum": ["stable", "experimental"]},
+        "isNsfw": {"type": "boolean"}, "supportsCustomBaseUrl": {"type": "boolean"},
+        "supportsFilterRefresh": {"type": "boolean"}, "metadataOnly": {"type": "boolean"},
+        "capabilities": {"type": "array", "maxItems": 6, "uniqueItems": true, "items": {"enum": ["browse", "latest", "search", "filters", "account", "recommendations"]}},
+        "features": {"type": "object", "additionalProperties": false, "properties": {"webLinks": {"type": "boolean"}, "auth": {"type": "boolean"}, "authCompletion": {"type": "boolean"}, "recommendations": {"type": "boolean"}}},
+        "parameters": {"type": "object", "maxProperties": 32, "additionalProperties": {"type": "string", "minLength": 1, "maxLength": 1024}},
+        "filterBindings": {"type": "object", "additionalProperties": false, "properties": {"author": {"type": "string", "minLength": 1, "maxLength": 128}, "artist": {"type": "string", "minLength": 1, "maxLength": 128}, "tags": {"type": "string", "minLength": 1, "maxLength": 128}}},
+        "web": {"type": "object", "additionalProperties": false, "required": ["mangaUrlTemplate", "idEncoding"], "properties": {"mangaUrlTemplate": {"type": "string", "minLength": 1, "maxLength": 1024, "pattern": "^/(?!/).*\\{id\\}"}, "idEncoding": {"enum": ["pathSegment", "path"]}, "idPart": {"type": "object", "additionalProperties": false, "required": ["separator", "index"], "properties": {"separator": {"type": "string", "minLength": 1, "maxLength": 8}, "index": {"type": "integer", "minimum": 0, "maximum": 8}}}}},
+        "network": {"$ref": "#/$defs/network"}, "media": {"$ref": "#/$defs/media"},
+        "auth": {"$ref": "#/$defs/auth"}, "settings": {"$ref": "#/$defs/settings"}
+      }
+    },
+    "network": {
+      "type": "object", "additionalProperties": false,
+      "required": ["origins", "imageOrigins", "authOrigins", "allowSubdomains", "methods", "maxConcurrentRequests"],
+      "properties": {
+        "origins": {"$ref": "#/$defs/origins"}, "imageOrigins": {"$ref": "#/$defs/origins"}, "authOrigins": {"$ref": "#/$defs/origins"},
+        "allowSubdomains": {"type": "boolean"}, "methods": {"type": "array", "minItems": 1, "maxItems": 4, "items": {"enum": ["GET", "POST", "HEAD"]}},
+        "maxConcurrentRequests": {"type": "integer", "minimum": 1, "maximum": 4}, "userAgentProfile": {"$ref": "#/$defs/userAgent"},
+        "cookieDefaults": {"type": "array", "maxItems": 16, "items": {"type": "object", "additionalProperties": false, "required": ["origin", "name", "value"], "properties": {"origin": {"$ref": "#/$defs/origin"}, "name": {"type": "string", "minLength": 1, "maxLength": 128}, "value": {"type": "string", "maxLength": 4096}, "path": {"type": "string", "maxLength": 1024, "pattern": "^/"}}}}
+      }
+    },
+    "media": {"type": "object", "additionalProperties": false, "required": ["userAgentProfile", "refererOrigin", "sendOrigin"], "properties": {"userAgentProfile": {"$ref": "#/$defs/userAgent"}, "refererOrigin": {"$ref": "#/$defs/origin"}, "sendOrigin": {"type": "boolean"}, "codecProfile": {"enum": ["inkstory.xor.v1"]}}},
+    "auth": {
+      "type": "object", "additionalProperties": false, "required": ["profileId", "loginUrl", "cookieOrigins", "sessionExport"],
+      "properties": {
+        "profileId": {"enum": ["host.cookie.v1", "host.libgroup.v1", "host.grouple.v1", "host.senkuro.v1"]}, "loginUrl": {"$ref": "#/$defs/https"},
+        "cookieOrigins": {"type": "array", "maxItems": 16, "items": {"$ref": "#/$defs/origin"}}, "completionUrl": {"$ref": "#/$defs/https"}, "successUrl": {"$ref": "#/$defs/https"},
+        "sessionExport": {"type": "object", "additionalProperties": false, "required": ["headers", "values"], "properties": {"headers": {"type": "array", "maxItems": 8, "items": {"enum": ["Cookie", "Authorization", "X-XSRF-TOKEN", "X-CSRF-TOKEN"]}}, "values": {"type": "array", "maxItems": 2, "items": {"enum": ["accessToken", "csrfToken"]}}}}
+      }
+    },
+    "settings": {"type": "object", "additionalProperties": false, "required": ["version"], "properties": {"version": {"type": "integer", "minimum": 1, "maximum": 1000}, "profileId": {"enum": ["host.libgroup.v1", "host.grouple.v1"]}, "fields": {"type": "array", "maxItems": 32, "items": {"$ref": "#/$defs/setting"}}}},
+    "setting": {"type": "object", "additionalProperties": false, "required": ["key", "label", "type", "default"], "properties": {
+      "key": {"type": "string", "pattern": "^[a-z][A-Za-z0-9_.-]{0,63}$", "not": {"enum": ["libgroup", "network"]}}, "label": {"type": "string", "minLength": 1, "maxLength": 128},
+      "type": {"enum": ["boolean", "string", "integer", "enum"]}, "default": {},
+      "min": {"type": "integer", "minimum": -1000000, "maximum": 1000000}, "max": {"type": "integer", "minimum": -1000000, "maximum": 1000000}, "maxLength": {"type": "integer", "minimum": 1, "maximum": 4096},
+      "options": {"type": "array", "minItems": 1, "maxItems": 64, "items": {"type": "object", "additionalProperties": false, "required": ["value", "label"], "properties": {"value": {"type": "string", "minLength": 1, "maxLength": 256}, "label": {"type": "string", "minLength": 1, "maxLength": 128}}}}
+    }}
+  }
+}

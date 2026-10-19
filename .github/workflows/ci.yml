@@ -1,0 +1,34 @@
+name: Source package checks
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm rebuild esbuild
+      - run: npm test
+      - run: npm run build:host
+      - name: Build and independently verify a development-only archive
+        run: |
+          node tools/pack.mjs --generate-key "$RUNNER_TEMP/source-ci.pem" --key-id ci-only
+          node tools/pack.mjs --key "$RUNNER_TEMP/source-ci.pem" --key-id ci-only --version 0.0.0-ci.1 --output dist/ci-test.mlsource
+          cp dist/ci-test.mlsource "$RUNNER_TEMP/first.mlsource"
+          node tools/pack.mjs --key "$RUNNER_TEMP/source-ci.pem" --key-id ci-only --version 0.0.0-ci.1 --output dist/ci-test.mlsource
+          cmp "$RUNNER_TEMP/first.mlsource" dist/ci-test.mlsource
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: development-only-source-package
+          path: dist/ci-test.mlsource*
+          retention-days: 7

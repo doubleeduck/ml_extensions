@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "extensionId": "example.source.package",
+  "name": "Example JSON API source (template only)",
+  "version": "1.0.0",
+  "publisherKeyId": "replace-with-your-key-id",
+  "sourceApiVersion": 1,
+  "minAppVersion": "1.0.0",
+  "minRuntimeAbi": 1,
+  "entrypoint": "src/index.mjs",
+  "license": "LicenseRef-Proprietary",
+  "permissions": ["http", "html"],
+  "sources": [{
+    "id": "en.example",
+    "name": "Example (template only)",
+    "language": "en",
+    "baseUrl": "https://example.org",
+    "engine": "Example JSON API",
+    "status": "experimental",
+    "isNsfw": false,
+    "supportsCustomBaseUrl": false,
+    "supportsFilterRefresh": false,
+    "capabilities": ["browse", "latest", "search", "filters"],
+    "features": {"webLinks": true, "auth": false, "authCompletion": false, "recommendations": false},
+    "web": {"mangaUrlTemplate": "/title/{id}", "idEncoding": "pathSegment"},
+    "network": {
+      "origins": ["https://example.org"],
+      "imageOrigins": ["https://images.example.org"],
+      "authOrigins": [],
+      "allowSubdomains": false,
+      "methods": ["GET"],
+      "maxConcurrentRequests": 2
+    },
+    "media": {"userAgentProfile": "browser", "refererOrigin": "https://example.org", "sendOrigin": false}
+  }]
+}

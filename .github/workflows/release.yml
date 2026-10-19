@@ -1,0 +1,41 @@
+name: Protected source package release
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Existing v-prefixed Git tag version, without v (for example 1.0.0)
+        required: true
+        type: string
+permissions:
+  contents: read
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    environment: official-source-release
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm rebuild esbuild
+      - run: npm test
+      - name: Verify native/app acceptance and sign without printing private bytes
+        run: node tools/protected_release.mjs
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+          ACCEPTED_APP_COMMIT: ${{ vars.ACCEPTED_APP_COMMIT }}
+          MLSOURCE_PUBLISHER_KEY_ID: ${{ vars.MLSOURCE_PUBLISHER_KEY_ID }}
+          MLSOURCE_SIGNING_KEY_BASE64: ${{ secrets.MLSOURCE_SIGNING_KEY_BASE64 }}
+      - name: Publish signed package, public record, checksum and detached repository index
+        run: node tools/protected_release.mjs --publish
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+          ACCEPTED_APP_COMMIT: ${{ vars.ACCEPTED_APP_COMMIT }}
+          GH_TOKEN: ${{ github.token }}
