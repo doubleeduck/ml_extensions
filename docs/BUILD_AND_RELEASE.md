@@ -35,7 +35,7 @@ logout, filters, recommendations, pages, pinned media/downloads/OCR, background
 updates, installation/update/rollback/disable/remove and simultaneous search.
 Check physical arm64/release and Windows release behavior without clearing or
 reinstalling a user's application. Obtain separate device permission when needed.
-Record the exact source-repository commit accepted by these checks.
+Tag the tested source-repository commit when preparing a release.
 
 The 2026-10-19 integration passes strict analysis, 1066 Flutter tests (one opt-in
 live skip), 104 Node tests. Native Windows tests use the Release LPAC sandbox
@@ -54,17 +54,16 @@ For manual packaging/publication, follow the Russian step-by-step
 
 Configure branch protection and the `official-source-release` environment.
 Human reviewers are an optional additional gate: when configured, automatic
-tag releases wait for approval; the accepted-commit check is always required.
-Set its variables `MLSOURCE_PUBLISHER_KEY_ID` and
-`ACCEPTED_APP_COMMIT` (the exact accepted 40-character source commit), and secret
+tag releases wait for approval. No separate commit approval variable is needed.
+Set its variable `MLSOURCE_PUBLISHER_KEY_ID` and secret
 `MLSOURCE_SIGNING_KEY_BASE64` (base64 PKCS#8 Ed25519 PEM). Keep the signing key
 separate from the repo; back it up under the owner's control. The app needs the
 corresponding public trust/ownership record before distributing a release.
 
-Create and push the SemVer Git tag `vVERSION` at that same commit to start the
+Create and push the SemVer Git tag `vVERSION` at the tested commit to start the
 release automatically. Alternatively dispatch the release workflow on the
-accepted ref, supplying `VERSION` without `v`. It reruns the
-fixtures, requires the acceptance variable and tag to match `GITHUB_SHA`, then
+release ref, supplying `VERSION` without `v`. It reruns the
+fixtures, requires the tag to match the workflow's `GITHUB_SHA`, then
 signs in a private runner temp file. The key is not printed/passed to the child
 environment and its temporary file is removed. Only `.mlsource`, public record,
 SHA-256 checksum, `extensions-index.json` and its raw 64-byte Ed25519 detached

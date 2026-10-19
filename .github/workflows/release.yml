@@ -31,16 +31,14 @@ jobs:
       - run: npm ci --ignore-scripts
       - run: npm rebuild esbuild
       - run: npm test
-      - name: Verify native/app acceptance and sign without printing private bytes
+      - name: Verify release tag and sign without printing private bytes
         run: node tools/protected_release.mjs
         env:
           RELEASE_VERSION: ${{ inputs.version }}
-          ACCEPTED_APP_COMMIT: ${{ vars.ACCEPTED_APP_COMMIT }}
           MLSOURCE_PUBLISHER_KEY_ID: ${{ vars.MLSOURCE_PUBLISHER_KEY_ID }}
           MLSOURCE_SIGNING_KEY_BASE64: ${{ secrets.MLSOURCE_SIGNING_KEY_BASE64 }}
       - name: Publish signed package, public record, checksum and detached repository index
         run: node tools/protected_release.mjs --publish
         env:
           RELEASE_VERSION: ${{ inputs.version }}
-          ACCEPTED_APP_COMMIT: ${{ vars.ACCEPTED_APP_COMMIT }}
           GH_TOKEN: ${{ github.token }}

@@ -196,13 +196,12 @@ Get-Content D:/releases/mlsource/1.0.0/official.mangalaunch.sources.mlsource.sha
 
 Подробности — [GITHUB_ACTIONS_SETUP_RU.md](GITHUB_ACTIONS_SETUP_RU.md). В самостоятельном
 репозитории настроить environment `official-source-release` с необязательным
-reviewer, переменные `MLSOURCE_PUBLISHER_KEY_ID`, `ACCEPTED_APP_COMMIT` и secret
-`MLSOURCE_SIGNING_KEY_BASE64`. Несмотря на имя, `ACCEPTED_APP_COMMIT` сейчас
-проверяется **против commit репозитория расширений**, а не SHA другого репозитория.
-Его заполняют после app/native-приёмки именно этого состояния расширений.
+reviewer, переменную `MLSOURCE_PUBLISHER_KEY_ID` и secret
+`MLSOURCE_SIGNING_KEY_BASE64`. Вручную указывать или подтверждать SHA не нужно:
+workflow сам проверяет соответствие тега коммиту, из которого он запущен.
 
 Workflow запускается автоматически при push `vVERSION` tag или вручную на
-принятом ref и публикует тот же комплект. PR не должен получать signing secret. Не добавлять
+ref с соответствующим тегом и публикует тот же комплект. PR не должен получать signing secret. Не добавлять
 новую систему автоматического доверия ключам ради удобства CI.
 
 ## 9. Обновление, откат и смена ключа

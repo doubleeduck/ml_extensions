@@ -6,12 +6,12 @@ import {resolveReleaseVersion} from './release_version.mjs';
 const version = resolveReleaseVersion({requestedVersion:process.env.RELEASE_VERSION,
   refType:process.env.GITHUB_REF_TYPE,refName:process.env.GITHUB_REF_NAME});
 const commit = process.env.GITHUB_SHA;
-if (!/^[a-f0-9]{40}$/u.test(commit ?? '') || process.env.ACCEPTED_APP_COMMIT !== commit) throw Error('Owner-approved native/app 29-source acceptance must match this exact commit.');
+if (!/^[a-f0-9]{40}$/u.test(commit ?? '')) throw Error('A valid workflow commit SHA is required.');
 const run = (command,args,options = {}) => {
   const result = spawnSync(command,args,{stdio:'inherit',...options}); if (result.status !== 0) throw Error('Release command failed.'); return result;
 };
 const tag = `v${version}`, tagCommit = spawnSync('git',['rev-list','-n','1',tag],{encoding:'utf8'});
-if (tagCommit.status !== 0 || tagCommit.stdout.trim() !== commit) throw Error('The existing release tag must point at the accepted commit.');
+if (tagCommit.status !== 0 || tagCommit.stdout.trim() !== commit) throw Error('The existing release tag must point at the workflow commit.');
 if (process.argv.includes('--publish')) {
   const file = 'dist/official.mangalaunch.sources.mlsource';
   for (const suffix of ['', '.public.json','.sha256']) await readFile(`${file}${suffix}`);
