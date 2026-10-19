@@ -44,7 +44,7 @@ const metadata = (id,name,host,module,extra = {}) => source(id,name,host,module,
 export const registrations = [
   source('ru.inkstory','InkStory','inkstory.net','sources/inkstory.mjs',{engine:'InkStory API/HTML JS',custom:true,refresh:true,recommendations:true,
     template:'/{id}',encoding:'path',origins:['https://api.inuko.me'],images:['https://inuko.me','https://inkstory.net'],bindings:{tags:'genre'},media:{codecProfile:'inkstory.xor.v1'}}),
-  ...['ru','en'].map(language => source(`${language}.mangadex`,'MangaDex','mangadex.org','engines/mangadex.mjs',{engine:'MangaDex API JS',parameters:{translatedLanguage:language},origins:['https://api.mangadex.org'],images:['https://uploads.mangadex.org','https://mangadex.network'],template:'/title/{id}',bindings:{tags:'tags'}})),
+  ...['ru','en'].map(language => source(`${language}.mangadex`,'MangaDex','mangadex.org','engines/mangadex.mjs',{engine:'MangaDex API JS',recommendations:true,parameters:{translatedLanguage:language},origins:['https://api.mangadex.org'],images:['https://uploads.mangadex.org','https://mangadex.network'],template:'/title/{id}',bindings:{tags:'tags'}})),
   libgroup('ru.mangalib','MangaLib','mangalib.me',1),libgroup('ru.hentailib','HentaiLib','hentailib.me',4,true),libgroup('ru.yaoilib','YaoiLib','v2.shlib.life',2,true),
   grouple('ru.readmanga','ReadManga','a.zazaza.me'),grouple('ru.mintmanga','MintManga','2.mintmanga.one',true),grouple('ru.seimanga','SeiManga','1.seimanga.me'),
   grouple('ru.selfmanga','SelfManga','1.selfmanga.live'),grouple('ru.usagi','Usagi','a.zazaza.me'),grouple('ru.rumix','RuMIX','rumix.me'),grouple('ru.allhentai','AllHentai','20.allhen.online',true),
@@ -68,5 +68,5 @@ export const registrations = [
 export function sourceDefinitions() { return registrations.map(({_module,...definition}) => definition); }
 export function manifestDefinition({version,publisherKeyId}) {
   return {schemaVersion:1,extensionId:'official.mangalaunch.sources',name:'MangaLaunch Official Sources',version,publisherKeyId,
-    sourceApiVersion:1,minAppVersion:'1.0.0',minRuntimeAbi:1,entrypoint:'src/index.mjs',license:'LicenseRef-Proprietary',permissions:['http','html','sourceSettings','sourceSession'],sources:sourceDefinitions(),files:{}};
+    icon:'assets/icon.png',sourceApiVersion:1,minAppVersion:'1.0.0',minRuntimeAbi:1,entrypoint:'src/index.mjs',license:'LicenseRef-Proprietary',permissions:['http','html','sourceSettings','sourceSession'],sources:sourceDefinitions(),files:{}};
 }

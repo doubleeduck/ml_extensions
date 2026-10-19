@@ -2,14 +2,15 @@
 
 The complete pool is one separately installed, signed `.mlsource` package with
 all 29 persistent source IDs. The app is wired to the dynamic JS registry only:
-there is no built-in Dart source fallback. Strict analysis, 1054 app tests
-(one opt-in live skip), 100 Node tests and Windows/Android arm64 Release builds
-pass as of 2026-10-19. Physical-device and full live-source acceptance remain
+there is no built-in Dart source fallback. Strict analysis, 1066 app tests
+(one opt-in live skip) and 104 Node tests pass as of 2026-10-19.
+Windows/Android arm64 Release builds passed for the earlier engine integration;
+the latest UI changes have not been rebuilt into APK/EXE files. Physical-device and full live-source acceptance remain
 separate release gates; offline fixtures are not a 29-source live certification.
 
 Sources are handwritten ES modules; Dart is never compiled into this package.
 The app imports `manga_sources/source_contract.dart` (DTOs/interfaces only).
-Original Dart parsers remain in the repository behind `legacy_sources.dart`
+Original Dart parsers remain in the app repository behind `legacy_sources.dart`
 as test-only parity oracles, outside the production dependency graph.
 Shared engines/helpers are included once; source instances never share sessions.
 
@@ -28,14 +29,15 @@ Build the host SDK for native fixture tests with `node tools/build_host_sdk.mjs`
 It supplies the app runtime web primitives, not site parsers, and has no external
 runtime imports. See core-js/esbuild upstream documentation linked in the SDK.
 
-The app bundles a generated, trusted copy of the SDK. After SDK changes run
-`npm run sync:host`; `npm run check:host` verifies that the checked-in app asset
-is reproducible. Flutter builds do not run npm or download a JavaScript engine.
+The app bundles a generated, trusted copy of the SDK. `npm run build:host` creates
+`dist/host-bootstrap.js`. After SDK changes, the app developer must update its
+trusted asset deliberately; this standalone repository never writes outside its
+root by default. Flutter builds do not run npm or download a JavaScript engine.
 
-See `../../docs/JS_SOURCE_EXTENSIONS_PROGRESS.md` for integration status and
-`../../docs/JS_SOURCE_AUTHORING_TZ.md` for the authoring contract.
-For first installation and migration, see
-`../../docs/JS_SOURCE_EXTENSIONS_HANDOFF.md`. An empty installed registry is
+See [AUTHORING.md](docs/AUTHORING.md) for the authoring contract and
+[BUILD_AND_RELEASE.md](docs/BUILD_AND_RELEASE.md) for verification/release gates.
+For GitHub setup and automatic tag builds, see
+[GITHUB_ACTIONS_SETUP_RU.md](docs/GITHUB_ACTIONS_SETUP_RU.md). An empty installed registry is
 intentional: source code is not hidden inside the APK/executable. Import the
 publisher public record and official package in Settings → Extensions, review
 the fingerprint and grants. Library/history/progress/download IDs are unchanged.
@@ -49,12 +51,12 @@ generic `tools/pack_extension.mjs` CLI for a separate source project.
 ```powershell
 npm ci
 npm test
-npm run check:host
+npm run build:host
 node tools/pack.mjs --generate-key .keys/local-development.pem --key-id local-development
 node tools/pack.mjs --key .keys/local-development.pem --key-id local-development --version 1.0.0-dev.1
 ```
 
-The packer collects only the handwritten runtime graph and `LICENSE`; no Dart,
+The packer collects only the handwritten runtime graph, package icon and `LICENSE`; no Dart,
 Node dependencies, SDK build tools, private key or tests enter the package.
 `src/definitions.mjs` is build-time metadata; `src/index.mjs` is the runtime
 dispatcher. The archive uses sorted entries, fixed ZIP timestamps, canonical

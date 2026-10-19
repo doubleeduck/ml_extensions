@@ -2,8 +2,9 @@ import {spawnSync} from 'node:child_process';
 import {readFile,writeFile,unlink} from 'node:fs/promises';
 import {createPrivateKey,randomUUID} from 'node:crypto';
 import path from 'node:path';
-const version = process.env.RELEASE_VERSION;
-if (!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/u.test(version ?? '')) throw Error('A strict release version is required.');
+import {resolveReleaseVersion} from './release_version.mjs';
+const version = resolveReleaseVersion({requestedVersion:process.env.RELEASE_VERSION,
+  refType:process.env.GITHUB_REF_TYPE,refName:process.env.GITHUB_REF_NAME});
 const commit = process.env.GITHUB_SHA;
 if (!/^[a-f0-9]{40}$/u.test(commit ?? '') || process.env.ACCEPTED_APP_COMMIT !== commit) throw Error('Owner-approved native/app 29-source acceptance must match this exact commit.');
 const run = (command,args,options = {}) => {

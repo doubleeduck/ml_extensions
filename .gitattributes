@@ -1,0 +1,6 @@
+* text=auto eol=lf
+*.png -text
+*.jpg -text
+*.webp -text
+*.mlsource -text
+*.ed25519 -text

@@ -9,9 +9,9 @@ license without the owner's explicit decision.
 ## Local development
 
 Use Node 22+, the committed npm lockfile and `npm ci`. Run `npm test` and
-`npm run build:host`. In the app monorepo, `npm run check:host` compares the SDK
-against `../../assets/source_extensions/host-bootstrap.js`; in the standalone
-source repository the SDK output is only a development/test artifact. It is
+`npm run build:host`. In this standalone source repository the SDK output is
+only a local development/test artifact. Synchronization into the application
+must be explicit and separately reviewed. It is
 not bundled in `.mlsource`, and Flutter builds do not invoke npm.
 
 Generate a local Ed25519 key with `tools/pack.mjs --generate-key PATH --key-id ID`.
@@ -37,9 +37,13 @@ Check physical arm64/release and Windows release behavior without clearing or
 reinstalling a user's application. Obtain separate device permission when needed.
 Record the exact source-repository commit accepted by these checks.
 
-The 2026-10-19 integration passes strict analysis, 1054 Flutter tests (one opt-in
-live skip), 100 Node tests and Windows/Android arm64 Release builds. Native
-Windows tests use the Release LPAC sandbox and fresh 1.0.0-dev.4 local package.
+The 2026-10-19 integration passes strict analysis, 1066 Flutter tests (one opt-in
+live skip), 104 Node tests. Native Windows tests use the Release LPAC sandbox
+and fresh 1.0.0-dev.6 local package. The latest UI changes were not built into
+new APK/EXE files; Windows/Android arm64 Release builds cover the earlier engine
+integration. A separate live MangaDex RU/EN check covers filters, popular/latest,
+details, recommendations, chapter metadata and page URL declarations without
+downloading images or using user credentials.
 Physical-device and full 29-source live/auth/media acceptance remain outstanding.
 Do not treat fixture results as permission to publish a production release.
 
@@ -48,21 +52,26 @@ For manual packaging/publication, follow the Russian step-by-step
 
 ## Protected GitHub publication
 
-Configure branch protection and the `official-source-release` environment with
-required human reviewers. Set its variables `MLSOURCE_PUBLISHER_KEY_ID` and
+Configure branch protection and the `official-source-release` environment.
+Human reviewers are an optional additional gate: when configured, automatic
+tag releases wait for approval; the accepted-commit check is always required.
+Set its variables `MLSOURCE_PUBLISHER_KEY_ID` and
 `ACCEPTED_APP_COMMIT` (the exact accepted 40-character source commit), and secret
 `MLSOURCE_SIGNING_KEY_BASE64` (base64 PKCS#8 Ed25519 PEM). Keep the signing key
 separate from the repo; back it up under the owner's control. The app needs the
 corresponding public trust/ownership record before distributing a release.
 
-Create the SemVer Git tag `vVERSION` at that same commit. Dispatch the release
-workflow on the accepted ref, supplying `VERSION` without `v`. It reruns the
+Create and push the SemVer Git tag `vVERSION` at that same commit to start the
+release automatically. Alternatively dispatch the release workflow on the
+accepted ref, supplying `VERSION` without `v`. It reruns the
 fixtures, requires the acceptance variable and tag to match `GITHUB_SHA`, then
 signs in a private runner temp file. The key is not printed/passed to the child
 environment and its temporary file is removed. Only `.mlsource`, public record,
 SHA-256 checksum, `extensions-index.json` and its raw 64-byte Ed25519 detached
 signature `extensions-index.ed25519` are uploaded with `gh release create --verify-tag`.
-No automatic release occurs on push or PR. PR workflows never receive the key.
+Branch pushes and PRs only build development artifacts and never publish a
+release. PR workflows never receive the key. See the exact environment variable
+setup in [the Russian GitHub Actions guide](GITHUB_ACTIONS_SETUP_RU.md).
 
 Actions are pinned to public official-repository commits verified 2026-10-19:
 [checkout](https://github.com/actions/checkout),

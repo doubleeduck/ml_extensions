@@ -13,8 +13,8 @@
 
 - Node.js 22 или новее, доступный командой `node --version`.
 - Windows PowerShell 5.1 или PowerShell 7 (`pwsh`).
-- Папка официальных расширений: `extensions/official` в этом проекте или корень
-  отдельного репозитория с тем же содержимым.
+- Папка официальных расширений: `D:/mangalaunch/ml_extensions` — корень
+  отдельного репозитория.
 - Собственный Ed25519 private key в PEM/PKCS#8, **вне публикуемой папки**.
 - Неизменный `KeyId` для этого ключа, например `official-publisher-2026`.
 - Для GitHub: публичный репозиторий `owner/repo`, выбранная версия и растущий
@@ -29,10 +29,11 @@ Visual Studio. `build-package.ps1` использует Node built-ins: он **�
 
 ## 2. Подготовить отдельный репозиторий
 
-Корнем будущего репозитория должна стать **папка `extensions/official`**, а не весь
-Flutter-проект. Сохранить в ней:
+Корень репозитория — **`D:/mangalaunch/ml_extensions`**, не весь Flutter-проект.
+Сохранить в нём:
 
 - `src/`: runtime JS и общие engines/helpers без копирования одинакового кода;
+- `assets/`: собственная иконка пакета, включённая в подписанный payload;
 - `sdk/`, `templates/`, `tools/`, `tests/`, `docs/`;
 - `build-package.ps1`, `package.json`, `package-lock.json`;
 - `.github/`, `.gitignore`, `README.md`, `LICENSE`.
@@ -43,18 +44,18 @@ Flutter-проект. Сохранить в ней:
 Перед коммитом проверить `git status --short` и staged diff. `.gitignore` — защита
 от случайного добавления, а не гарантия отсутствия секрета в истории Git.
 
-После переноса в самостоятельный репозиторий относительные пути к приложению
-меняются: `npm run check:host` предназначен для монорепозитория. Node fixtures и
-`npm run build:host` можно запускать из отдельного репозитория. Нативные parity-
+Старые команды `check:host` и `sync:host` удалены: они обращались к прежнему
+монорепозиторию. Node fixtures и `npm run build:host` запускаются автономно.
+Нативные parity-
 и app-тесты выполняются в приложении для соответствующего состояния `src/`.
 
 ## 3. Создать или выбрать ключ издателя
 
 Ключ создаётся один раз, не заново для каждого обновления. Пример из корня
-приложения, при условии что личная папка доступна только владельцу:
+репозитория расширений, при условии что личная папка доступна только владельцу:
 
 ```powershell
-node ./extensions/official/tools/pack.mjs --generate-key C:/private/mangalaunch-official.pem --key-id official-publisher-2026
+node ./tools/pack.mjs --generate-key C:/private/mangalaunch-official.pem --key-id official-publisher-2026
 ```
 
 В отдельном репозитории путь к команде — `./tools/pack.mjs`. Private PEM нельзя
@@ -87,25 +88,19 @@ SemVer. Тег релиза затем должен быть `v1.0.0` или `v1
 Для разработки и приёмки, отдельно от команды упаковки:
 
 ```powershell
-Set-Location D:/mangalaunch/mangalaunch/extensions/official
+Set-Location D:/mangalaunch/ml_extensions
 npm ci
 npm test
-npm run check:host
+npm run build:host
 ```
 
-После изменений host SDK: `npm run sync:host`, затем тесты приложения и его
-сборки. После изменений только JS-парсеров новый Flutter build обычно не нужен,
+После изменений host SDK его перенос в приложение выполняется явно, затем
+запускаются тесты приложения и его сборки. После изменений только JS-парсеров новый Flutter build обычно не нужен,
 но поведение нового пакета должно быть проверено в совместимой версии приложения.
 Минимальные API/ABI/app-version декларации берутся из `src/definitions.mjs`;
 не повышать их без необходимости и не понижать вопреки реально используемым API.
 
 ## 5. Подготовить пакет без GitHub-индекса
-
-Из корня приложения:
-
-```powershell
-./extensions/official/build-package.ps1 -KeyPath C:/private/mangalaunch-official.pem -KeyId official-publisher-2026 -Version 1.0.0 -OutputPath D:/releases/mlsource/1.0.0/official.mangalaunch.sources.mlsource
-```
 
 Из корня самостоятельного репозитория:
 
@@ -127,7 +122,7 @@ npm run check:host
 ./build-package.ps1 -KeyPath C:/private/mangalaunch-official.pem -KeyId official-publisher-2026 -Version 1.0.0 -OutputPath D:/releases/mlsource/1.0.0/official.mangalaunch.sources.mlsource -Repository OWNER/REPO -IndexSerial 1
 ```
 
-В монорепозитории использовать `./extensions/official/build-package.ps1`.
+Команда запускается из корня репозитория расширений.
 `Repository` должен соответствовать реальному репозиторию; в подписанном JSON
 он нормализуется в lowercase. Один комплект нельзя без переподписи индекса
 выдавать за выпуск из другого `owner/repo`.
@@ -199,15 +194,15 @@ Get-Content D:/releases/mlsource/1.0.0/official.mangalaunch.sources.mlsource.sha
 
 ## 8. Альтернатива: защищённый release workflow
 
-Подробности — [BUILD_AND_RELEASE.md](BUILD_AND_RELEASE.md). В самостоятельном
-репозитории настроить environment `official-source-release` с обязательным
+Подробности — [GITHUB_ACTIONS_SETUP_RU.md](GITHUB_ACTIONS_SETUP_RU.md). В самостоятельном
+репозитории настроить environment `official-source-release` с необязательным
 reviewer, переменные `MLSOURCE_PUBLISHER_KEY_ID`, `ACCEPTED_APP_COMMIT` и secret
 `MLSOURCE_SIGNING_KEY_BASE64`. Несмотря на имя, `ACCEPTED_APP_COMMIT` сейчас
 проверяется **против commit репозитория расширений**, а не SHA другого репозитория.
 Его заполняют после app/native-приёмки именно этого состояния расширений.
 
-Workflow запускается вручную на принятом ref с существующим `vVERSION` tag и
-публикует тот же комплект. PR не должен получать signing secret. Не добавлять
+Workflow запускается автоматически при push `vVERSION` tag или вручную на
+принятом ref и публикует тот же комплект. PR не должен получать signing secret. Не добавлять
 новую систему автоматического доверия ключам ради удобства CI.
 
 ## 9. Обновление, откат и смена ключа

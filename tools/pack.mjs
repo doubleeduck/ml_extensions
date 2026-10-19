@@ -24,7 +24,8 @@ if (args.includes('--generate-key')) {
     }
   }
   await collect(path.join(root,'src')); payloads.set('LICENSE',await readFile(path.join(root,'LICENSE')));
-  for (const bytes of payloads.values()) if (/\b(?:from|import)\s*\(?\s*['"](?:node:|https?:|file:)/u.test(bytes.toString('utf8'))) throw Error('Package runtime must not import Node/network/filesystem modules.');
+  payloads.set('assets/icon.png',await readFile(path.join(root,'assets/icon.png')));
+  for (const [name,bytes] of payloads) if (name.endsWith('.mjs') && /\b(?:from|import)\s*\(?\s*['"](?:node:|https?:|file:)/u.test(bytes.toString('utf8'))) throw Error('Package runtime must not import Node/network/filesystem modules.');
   const signed = signedManifest(manifestDefinition({version,publisherKeyId:keyId}),payloads,await readFile(keyFile));
   const archive = packageZip(new Map([['manifest.json',signed.bytes],['signature.ed25519',signed.signature],...payloads]));
   const manifest = verifyPackage(archive,signed.publicKey); if (manifest.sources.length !== 29 || new Set(manifest.sources.map(source => source.id)).size !== 29) throw Error('Official bundle must preserve exactly 29 IDs.');

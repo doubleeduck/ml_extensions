@@ -3,6 +3,18 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import createMangaDex, {buildFilters, parseChapter, parseManga, searchParameters} from '../src/engines/mangadex.mjs';
 import {tagGroups} from '../src/engines/mangadex_tags.mjs';
+import {sourceDefinitions} from '../src/definitions.mjs';
+
+test('both installed MangaDex variants advertise their implemented recommendations and preserve IDs', () => {
+  const sources = sourceDefinitions().filter(source => source.id.endsWith('.mangadex'));
+  assert.deepEqual(sources.map(source => source.id),['ru.mangadex','en.mangadex']);
+  for (const source of sources) {
+    assert.equal(source.features.recommendations,true);
+    assert.ok(source.capabilities.includes('recommendations'));
+    assert.ok(source.network.origins.includes('https://api.mangadex.org'));
+    assert.equal(source.parameters.translatedLanguage,source.language);
+  }
+});
 
 const item = (id = 'manga-opaque') => ({id,attributes:{title:{en:'English',ru:'Русское имя',ja:'日本語'},
   altTitles:[{en:'English'},{ja:'日本語'}],description:{en:'Description',ru:'Описание'},year:2025,status:'ongoing',
@@ -33,9 +45,8 @@ test('fractional chapter ID, title and timestamp survive the port', () => {
   assert.equal(value.uploadedAt,'2025-04-15T09:00:00.000Z');
   assert.equal(parseChapter(chapter('id',{chapter:0,title:null,volume:null})).title,'Ch. 0');
 });
-test('all static tag IDs and group keys are identical to the retained Dart oracle', () => {
-  const oracle = readFileSync(new URL('../../../packages/manga_sources/lib/src/engines/mangadex/mangadex_tag_groups.dart',import.meta.url),'utf8');
-  const ids = [...oracle.matchAll(/id: '([^']+)'/gu)].map(match => match[1]);
+test('all static tag IDs and group keys match the independent compatibility fixture', () => {
+  const {ids} = JSON.parse(readFileSync(new URL('./fixtures/mangadex-tags.json',import.meta.url),'utf8'));
   assert.deepEqual(tagGroups.flatMap(group => group.tags.map(tag => tag[0])),ids);
   assert.deepEqual(tagGroups.map(group => group.key),['content','format','genre','theme']);
   assert.equal(buildFilters().length,12);
