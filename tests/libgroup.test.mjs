@@ -115,7 +115,8 @@ test('details use API genres, tags, format and age without requesting HTML', asy
   let calls=0;
   const source = createLibGroup(context((url,request) => {
     calls++; assert.equal(request.responseType,'json');
-    assert.ok(url.searchParams.getAll('fields[]').includes('ageRestriction'));
+    assert.ok(url.searchParams.getAll('fields[]').includes('caution'));
+    assert.ok(!url.searchParams.getAll('fields[]').includes('ageRestriction'));
     return {data:{...item,summary:'Summary',tags:[{name:'Office workers'},{name:'drama'}],
       format:[{name:'В цвете'}],ageRestriction:{label:'18+'}}};
   }));
@@ -153,4 +154,26 @@ test('malformed similar payloads do not poison the recommendation cache', async 
   let calls=0; const source=createLibGroup(context(()=>++calls===1 ? {data:[{}]} : {data:[]}));
   await assert.rejects(source.getRecommendations({mangaId:'self'}),error=>error.code==='parse_error');
   assert.deepEqual((await source.getRecommendations({mangaId:'self'})).items,[]);assert.equal(calls,2);
+});
+
+test('details field contract accepts the request for all LibGroup site IDs', async () => {
+  const {fields}=JSON.parse(await readFile(new URL('./fixtures/libgroup-detail-fields.json',import.meta.url),'utf8'));
+  const allowed=new Set(fields);
+  for(const siteId of [1,2,4]) {
+    let calls=0;
+    const source=createLibGroup(context((url,request)=>{
+      calls++;
+      const requested=url.searchParams.getAll('fields[]');
+      const invalid=requested.findIndex(field=>!allowed.has(field));
+      // The API validates request field names independently of response keys.
+      if(invalid!==-1) throw Object.assign(Error('Invalid detail field'),{code:'http_error',httpStatus:422,
+        body:{data:{['fields.'+invalid]:['Выбранное значение ошибочно.']}}});
+      assert.ok(requested.includes('caution'));
+      assert.equal(request.headers['Site-Id'],String(siteId));
+      return {data:{...item,ageRestriction:{label:'18+'},tags:[{name:'API tag'}],format:[{name:'В цвете'}]}};
+    },{},siteId));
+    const details=await source.getDetails({mangaId:item.slug_url});
+    assert.equal(details.id,item.slug_url);assert.equal(details.ageRating,'18+');
+    assert.deepEqual(details.tags,['Drama','API tag','В цвете']);assert.equal(calls,1);
+  }
 });

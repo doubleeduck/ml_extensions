@@ -6,9 +6,11 @@ import {decodeChapterId, needsTitlePreview, parseAccess, parseCatalogManga, pars
 
 const fallbackDomains = ['https://api.cdnlibs.org','https://api2.mangalib.me','https://hapi.hentaicdn.org','https://api.imglib.info'];
 const constantFields = ['genres','tags','types','scanlateStatus','status','format','ageRestriction','imageServers'];
+// Request field names differ from response names: caution returns ageRestriction.
+// Sending fields[]=ageRestriction makes the API reject the whole request (422).
 const detailFields = ['background','eng_name','otherNames','summary','releaseDate','type_id','caution','views','close_view','rate_avg','rate',
   'genres','tags','teams','user','franchise','authors','publisher','userRating','moderated','metadata','metadata.count',
-  'metadata.close_comments','manga_status_id','chap_count','status_id','artists','format','ageRestriction'];
+  'metadata.close_comments','manga_status_id','chap_count','status_id','artists','format'];
 export default function createLibGroup(ctx) {
   const siteId = Number(ctx.parameters.siteId), origin = new URL(ctx.baseUrl).origin;
   if (![1,2,4].includes(siteId)) throw new Error('Invalid LibGroup site configuration');
