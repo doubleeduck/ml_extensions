@@ -1,0 +1,84 @@
+{
+  "id": 772,
+  "slug_url": "772--haikyu",
+  "name": "Haikyuu!!",
+  "eng_name": "High Kyuu!!",
+  "rus_name": "Волейбол!!",
+  "genres": [
+    {
+      "id": 43,
+      "name": "Драма",
+      "adult": false,
+      "alert": false
+    },
+    {
+      "id": 47,
+      "name": "Комедия",
+      "adult": false,
+      "alert": false
+    },
+    {
+      "id": 52,
+      "name": "Повседневность",
+      "adult": false,
+      "alert": false
+    },
+    {
+      "id": 61,
+      "name": "Сёнэн",
+      "adult": false,
+      "alert": false
+    },
+    {
+      "id": 63,
+      "name": "Спорт",
+      "adult": false,
+      "alert": false
+    },
+    {
+      "id": 70,
+      "name": "Школа",
+      "adult": false,
+      "alert": false
+    }
+  ],
+  "tags": [
+    {
+      "id": 247,
+      "name": "Дружба",
+      "adult": false,
+      "alert": false,
+      "is_media_spoiler": false,
+      "is_general_spoiler": false
+    },
+    {
+      "id": 280,
+      "name": "Япония",
+      "adult": false,
+      "alert": false,
+      "is_media_spoiler": false,
+      "is_general_spoiler": false
+    },
+    {
+      "id": 295,
+      "name": "ГГ мужчина",
+      "adult": false,
+      "alert": false,
+      "is_media_spoiler": false,
+      "is_general_spoiler": false
+    },
+    {
+      "id": 334,
+      "name": "Спортивное тело",
+      "adult": false,
+      "alert": false,
+      "is_media_spoiler": false,
+      "is_general_spoiler": false
+    }
+  ],
+  "format": [],
+  "ageRestriction": {
+    "id": 3,
+    "label": "16+"
+  }
+}

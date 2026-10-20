@@ -67,6 +67,8 @@ export interface HtmlProjectionDto {
   directChildren?:boolean;
   /** Output the selected element's lower-case tag name instead of its text. */
   tagName?:boolean;
+  /** Boolean output: any of 1..8 literal substrings occurs in node text, case insensitive; <=256 characters per term. */
+  containsText?:string[];
 }
 export interface SourceAuthSessionV1 {
   readonly authorized:boolean; readonly revision:number; readonly origin:string;

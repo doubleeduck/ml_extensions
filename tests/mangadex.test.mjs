@@ -116,3 +116,20 @@ test('malformed responses and HTTP failures are errors, not successful empty lis
   await assert.rejects(createMangaDex(context(() => { throw new Error('network'); })).search({searchTerm:'12345678-1234-1234-1234-123456789012'}),/network/u);
   assert.throws(() => parseManga({id:'id',attributes:{}}),error => error.code === 'parse_error');
 });
+
+test('MangaDex recommendation pages reuse relation IDs but preserve distinct page metadata', async () => {
+  let relations=0;
+  const source=createMangaDex(context(url=>{
+    if(url.pathname.endsWith('/recommendation')) {relations++;return {data:[{relationships:Array.from({length:25},(_,i)=>({type:'manga',id:'r'+i}))}]};}
+    return {data:url.searchParams.getAll('ids[]').reverse().map(id=>item(id))};
+  }));
+  const first=await source.getRecommendations({mangaId:'self'}), second=await source.getRecommendations({mangaId:'self',page:2});
+  assert.equal(relations,1);assert.equal(first.items.length,20);assert.equal(first.hasNextPage,true);
+  assert.deepEqual(second.items.map(x=>x.id),['r20','r21','r22','r23','r24']);assert.equal(second.hasNextPage,false);
+});
+
+test('invalid relation lists are not cached as a successful response', async () => {
+  let calls=0; const source=createMangaDex(context(()=>++calls===1 ? {} : {data:[]}));
+  await assert.rejects(source.getRecommendations({mangaId:'self'}),error=>error.code==='parse_error');
+  assert.deepEqual((await source.getRecommendations({mangaId:'self'})).items,[]);assert.equal(calls,2);
+});

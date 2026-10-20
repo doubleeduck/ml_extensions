@@ -93,7 +93,8 @@ export default function createGrouple(ctx) {
       return error.body;
     }
   }
-  const html = async (url,projection,reuse = false) => ctx.html.extract(await response(url,{reuse}),{...projection,baseUrl:url});
+  const titlePage = recent(async url => ctx.html.extract(await response(url,{reuse:true}),{baseUrl:url,fields:{details:detailsProjection,chapters:chaptersProjection,recommendations:recommendationsProjection}}));
+  const html = async (url,projection,reuse = false) => reuse ? (await titlePage(url))[projection === detailsProjection ? 'details' : projection === chaptersProjection ? 'chapters' : 'recommendations'] : ctx.html.extract(await response(url),{...projection,baseUrl:url});
   const catalog = async query => { const origin = await base(); return parseCatalog(await response(urlWithQuery('/api/catalog/search',origin,query),{json:true}),origin); };
   return {
     async getFilters() {
@@ -146,7 +147,7 @@ export default function createGrouple(ctx) {
     async getRecommendations({mangaId:id,page = 1}) {
       const origin = await base(), normalized = Math.max(1,page), items = [], seen = new Set();
       if (normalized > 1) return {items,page:normalized,hasNextPage:false};
-      const sections = requireArray(await html(new URL(id.startsWith('/') ? id : `/${id}`,origin).href,recommendationsProjection),'GroupLe recommendations');
+      const sections = requireArray(await html(new URL(id.startsWith('/') ? id : `/${id}`,origin).href,recommendationsProjection,true),'GroupLe recommendations');
       const section = sections.find(value => value.like != null);
       if (section) for (const row of requireArray(section.cards,'GroupLe recommendation cards')) {
         const itemId = row.href ? galleryId(row.href,origin) : null, image = record(row.image), title = normalizeText(row.title ?? image.alt);

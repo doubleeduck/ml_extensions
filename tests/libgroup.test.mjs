@@ -1,3 +1,4 @@
+import {readFile} from 'node:fs/promises';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import createLibGroup from '../src/engines/libgroup.mjs';
@@ -10,7 +11,7 @@ const item = {id:7965,slug:'chainsaw-man',slug_url:'7965--chainsaw-man',eng_name
 function context(handler, settings = {}, siteId = 1) {
   return {sourceId:siteId === 1 ? 'ru.mangalib' : siteId === 2 ? 'ru.yaoilib' : 'ru.hentailib',
     parameters:{siteId:String(siteId)},baseUrl:siteId === 1 ? 'https://mangalib.me' : siteId === 2 ? 'https://v2.shlib.life' : 'https://hentailib.me',
-    settings:{get:async () => settings},html:{extract:async () => ['Office workers']},
+    settings:{get:async () => settings},html:{extract:async () => {throw Error('LibGroup must not request HTML');}},
     http:{request:async request => ({status:200,headers:{},url:request.url,body:await handler(new URL(request.url),request)})}};
 }
 test('catalog and detail title selection preserve persistent IDs, title settings and rich descriptions', () => {
@@ -110,15 +111,46 @@ test('auto image probing is coalesced across 40 pages and cached for the next ch
   await source.getPages({mangaId:'demo',chapterId:'1|2'});
   assert.equal(probes,1); assert.equal(constants,1);
 });
-test('details merge HTML creation tags while preserving API metadata and IDs', async () => {
-  const source = createLibGroup(context((url,request) => request.responseType === 'text' ? '<html>tags</html>' : {data:{...item,summary:'Summary'}}));
+test('details use API genres, tags, format and age without requesting HTML', async () => {
+  let calls=0;
+  const source = createLibGroup(context((url,request) => {
+    calls++; assert.equal(request.responseType,'json');
+    assert.ok(url.searchParams.getAll('fields[]').includes('ageRestriction'));
+    return {data:{...item,summary:'Summary',tags:[{name:'Office workers'},{name:'drama'}],
+      format:[{name:'В цвете'}],ageRestriction:{label:'18+'}}};
+  }));
   const details = await source.getDetails({mangaId:item.slug_url});
   assert.equal(details.id,item.slug_url); assert.equal(details.description,'Summary');
-  assert.deepEqual(details.tags,['Drama','Office workers']);
+  assert.deepEqual(details.tags,['Drama','Office workers','В цвете']);
+  assert.equal(details.ageRating,'18+'); assert.equal(calls,1);
 });
 test('similar titles stay within current site and retain recommendation order', async () => {
   const source = createLibGroup(context(() => ({data:[{media:item},{media:{...item,slug_url:'other-site',site:4}},
     {media:{...item,slug_url:'recommended',site:1}},{media:{...item,slug_url:'recommended',site:1}}]})));
   const result = await source.getRecommendations({mangaId:item.slug_url});
   assert.deepEqual(result.items.map(item => item.id),['recommended']); assert.equal(result.hasNextPage,false);
+});
+
+test('recommendation pages reuse their shared API result', async () => {
+  let calls=0;
+  const source=createLibGroup(context(() => {calls++;return {data:Array.from({length:50},(_,i)=>({media:{...item,slug_url:'r'+i,site:1}}))};}));
+  const first=await source.getRecommendations({mangaId:item.slug_url,page:1});
+  const next=await source.getRecommendations({mangaId:item.slug_url,page:2});
+  assert.equal(calls,1); assert.ok(first.items.length); assert.ok(next.items.length);
+  assert.notEqual(first.items[0].id,next.items[0].id);
+});
+
+test('real Haikyu API shape exposes six genres and four tags with no HTML fallback', async () => {
+  const row=JSON.parse(await readFile(new URL('./fixtures/libgroup-haikyu-api.json',import.meta.url),'utf8'));
+  let requests=0;const source=createLibGroup(context(()=>{requests++;return {data:row};}));
+  const details=await source.getDetails({mangaId:row.slug_url});
+  assert.equal(details.id,'772--haikyu');assert.equal(details.ageRating,'16+');
+  assert.deepEqual(details.tags,['Драма','Комедия','Повседневность','Сёнэн','Спорт','Школа','Дружба','Япония','ГГ мужчина','Спортивное тело']);
+  assert.equal(requests,1);
+});
+
+test('malformed similar payloads do not poison the recommendation cache', async () => {
+  let calls=0; const source=createLibGroup(context(()=>++calls===1 ? {data:[{}]} : {data:[]}));
+  await assert.rejects(source.getRecommendations({mangaId:'self'}),error=>error.code==='parse_error');
+  assert.deepEqual((await source.getRecommendations({mangaId:'self'})).items,[]);assert.equal(calls,2);
 });

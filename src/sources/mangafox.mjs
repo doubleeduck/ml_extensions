@@ -1,4 +1,4 @@
-import {recentRequest} from '../core/recent.mjs';
+import {recent} from '../core/recent.mjs';
 import {chapter,filter,manga,normalizeText,parseError,record,string} from '../core/data.mjs';
 import {requireArray,requireRecord,urlWithQuery} from '../core/http.mjs';
 
@@ -129,14 +129,14 @@ export function parseChapters(input) {
   return result;
 }
 export default function createMangaFox(ctx) {
-  const titleRequest = recentRequest(input => ctx.http.request(input));
-  async function html(url,projection,{mobilePage = false,reuse = false} = {}) {
+  async function html(url,projection,{mobilePage = false} = {}) {
     const origin = mobilePage ? mobile : desktop;
-    const response = await (reuse ? titleRequest : input => ctx.http.request(input))({method:'GET',url,responseType:'text',userAgentProfile:mobilePage ? 'mobileSafari' : 'browser',
+    const response = await ctx.http.request({method:'GET',url,responseType:'text',userAgentProfile:mobilePage ? 'mobileSafari' : 'browser',
       headers:{Accept:'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8','Accept-Language':'en-US,en;q=0.9',Origin:origin,Referer:`${origin}/`}});
     if (typeof response.body !== 'string' || !response.body.trim()) throw Object.assign(Error('MangaFox returned an empty page.'),{code:'invalid_response',phase:'http'});
     return {url:response.url ?? url,data:await ctx.html.extract(response.body,{...projection,baseUrl:response.url ?? url})};
   }
+  const titlePage = recent(url => html(url,{fields:{details:detailsProjection,chapters:chaptersProjection}}));
   const titleUrl = id => `${desktop}/manga/${id}/`;
   return {
     async getFilters() { return buildFilters(); },
@@ -147,8 +147,8 @@ export default function createMangaFox(ctx) {
       if (!query.searchTerm?.trim() && !hasFilters) return this.getPopular(query);
       return parseListing((await html(searchUrl(query),listingProjection)).data,{search:true});
     },
-    async getDetails({mangaId:id}) { const page = await html(titleUrl(id),detailsProjection,{reuse:true}); return parseDetails(page.data,id,page.url); },
-    async getChapters({mangaId:id}) { return parseChapters((await html(titleUrl(id),chaptersProjection,{reuse:true})).data); },
+    async getDetails({mangaId:id}) { const page = await titlePage(titleUrl(id)); return parseDetails(page.data.details,id,page.url); },
+    async getChapters({mangaId:id}) { return parseChapters((await titlePage(titleUrl(id))).data.chapters); },
     async getPages({chapterId}) {
       const path = chapterPath(chapterId); if (!path) throw parseError('MangaFox chapter id is missing.');
       const {data} = await html(new URL(path.replace('/manga/','/roll_manga/'),mobile).href,{selector:'#viewer img',all:true,fields:{original:{attr:'data-original'},src:{attr:'src'}}},{mobilePage:true});

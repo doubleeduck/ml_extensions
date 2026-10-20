@@ -1,0 +1,57 @@
+[
+  {
+    "sourceId": "ru.readmanga",
+    "mangaId": "/fixture",
+    "title": "Fixture",
+    "chapterCount": 1,
+    "recommendationCount": 0,
+    "html": "<div class=\"cr-hero-names__main\">Fixture</div><table><tr class=\"item-row\"><td><a class=\"chapter-link\" href=\"/fixture/c1\">Chapter 1</a></td></tr></table>"
+  },
+  {
+    "sourceId": "ru.readmanga",
+    "mangaId": "/licensed",
+    "title": "Fixture",
+    "status": "licensed",
+    "chapterCount": 0,
+    "recommendationCount": 0,
+    "html": "<h1 class=\"names\"><span class=\"name\">Fixture</span></h1><div class=\"expandable\"><span class=\"elem_category\">Манга</span></div><div>Чтение ЗАПРЕЩЁН: копирайт</div>"
+  },
+  {
+    "sourceId": "ru.readmanga",
+    "mangaId": "/single",
+    "title": "Fixture",
+    "status": "completed",
+    "chapterCount": 0,
+    "html": "<h1 class=\"names\"><span class=\"name\">Fixture</span></h1><div class=\"expandable\"><b>Сингл</b></div>"
+  },
+  {
+    "sourceId": "ru.mangachan",
+    "mangaId": "/manga/fixture",
+    "title": "Fixture",
+    "chapterCount": 1,
+    "html": "<div class=\"name_row\"><h1><a>Fixture</a></h1></div><table class=\"table_cha\"><tr><td><a href=\"/online/fixture/1.html\">Глава 1</a></td></tr></table>"
+  },
+  {
+    "sourceId": "en.mangafox",
+    "mangaId": "fixture",
+    "title": "Fixture",
+    "chapterCount": 1,
+    "html": "<div class=\"detail-info-right\"><h1>Fixture</h1></div><ul class=\"detail-main-list\"><li><a href=\"/manga/fixture/c001/1.html\"><span class=\"title3\">Chapter 1</span></a></li></ul>"
+  },
+  {
+    "sourceId": "ru.desu",
+    "mangaId": "/manga/fixture.123/",
+    "title": "Fixture",
+    "chapterCount": 1,
+    "recommendationCount": 0,
+    "html": "<div class=\"titleBar\"><h1><span class=\"rus-name\">Fixture</span></h1></div><ul class=\"chlist\"><li><a href=\"/manga/fixture.123/vol1/ch1/1\">Chapter 1</a></li></ul>"
+  },
+  {
+    "sourceId": "ru.mangashi",
+    "mangaId": "/manga/fixture/",
+    "title": "Fixture",
+    "chapterCount": 1,
+    "recommendationCount": 0,
+    "html": "<h1>Fixture</h1><a href=\"/manga/fixture/glava-1/\"><span class=\"chapter-title\">Chapter 1</span></a>"
+  }
+]

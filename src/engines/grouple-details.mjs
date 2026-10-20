@@ -5,7 +5,7 @@ const texts = selector => ({selector,all:true,text:true,normalizeWhitespace:fals
 export const detailsProjection = {fields:{legacy:{selector:'.expandable',fields:{category:text('span.elem_category'),age:text('.elem_limitation .element-link'),
   tags:texts('a[href*="/list/genre/"], a[href*="/list/tag/"], a[href*="/list/tags/"]'),alt:text('.another-names'),
   image:{selector:'img',fields:{full:{attr:'data-full'},original:{attr:'data-original'},src:{attr:'src'}}},
-  author:text('span.elem_author, span.elem_screenwriter'),artist:text('span.elem_illustrator'),badges:texts('span.badge'),html:{outerHtml:true}}},
+  author:text('span.elem_author, span.elem_screenwriter'),artist:text('span.elem_illustrator'),badges:texts('span.badge'),single:{selector:'b',all:true,containsText:['сингл']}}},
   directNames:texts('h1.names > span.name'),name:text('.names > .name'),english:text('h1.names .eng-name, h1.names .eng_name'),
   legacyAlt:{fields:Object.fromEntries(['.eng-name','.eng_name','.original-name','.names .eng-name','.names .eng_name','.all-names-popover .name'].map((selector,index) => [`a${index}`,texts(selector)]))},
   legacySummary:text('#tab-description .manga-description'),modernTitle:text('.cr-hero-names__main'),metaTitle:{selector:'meta[itemprop=name]',attr:'content'},
@@ -15,7 +15,7 @@ export const detailsProjection = {fields:{legacy:{selector:'.expandable',fields:
   modernAlt:{fields:Object.fromEntries(['.cr-hero-names__alt span:not(.cr-hero-names__alt-separator)','.eng-name','.eng_name'].map((selector,index) => [`a${index}`,texts(selector)]))},
   modalAlt:texts('#alt-names-dialog .modal-body .py-1'),modernSummary:text('.cr-description__content'),image:{selector:'.cr-hero-poster__img',fields:{src:{attr:'src'},lazy:{attr:'data-src'},original:{attr:'data-original'}}},
   background:{selector:'.cr-hero-overlay__bg',attr:'data-bg'},creation:{selector:'.creation-element-tags__content a.creation-element-tags__item',all:true,fields:{text:{text:true},spans:texts('span:not(.text-secondary)')}},
-  chapters:{selector:'div.chapters',fields:{present:{text:true}}},html:{selector:'html',outerHtml:true}}};
+  chapters:{selector:'div.chapters',fields:{present:{text:true}}},prohibited:{selector:'body',containsText:['запрещен','запрещён']},copyright:{selector:'body',containsText:['копирайт']}}};
 const splitTitles = value => String(value ?? '').split(/[/;\n]+/gu).map(normalizeText).filter(Boolean);
 const dedupe = values => { const seen = new Set(); return values.filter(value => { const key = value.trim().toLowerCase(); if (!key || seen.has(key)) return false; seen.add(key); return true; }); };
 const alternativeTitles = input => dedupe(Object.values(requireRecord(input,'GroupLe alternative titles')).flatMap(values => requireArray(values,'GroupLe titles').flatMap(splitTitles)));
@@ -52,11 +52,11 @@ export function parseDetails(input,id,base,settings = {}) {
     const english = normalizeText(data.english), other = normalizeText(legacy.alt), alternatives = [english,...alternativeTitles(data.legacyAlt),...splitTitles(other)];
     const alternative = language === 'eng' && english && english !== title ? english : preferred(alternatives,title,language);
     const category = normalizeText(legacy.category), age = ageLabel(legacy.age), image = record(legacy.image), badges = requireArray(legacy.badges,'GroupLe status badges').map(normalizeText).join(' ').toLowerCase();
-    const body = String(data.html).toLowerCase(), restricted = /запрещен|запрещён/u.test(body) && body.includes('копирайт') && data.chapters == null;
+    const restricted = data.prohibited === true && data.copyright === true && data.chapters == null;
     const raw = image.full ?? image.original ?? image.src;
     return manga({id,...titles(title,alternative,language),coverUrl:string(raw) ? new URL(raw,base).href : null,description:description(other,normalizeText(data.legacySummary)),
       author:string(normalizeText(legacy.author)),artist:string(normalizeText(legacy.artist)),type:string(category),
-      status:restricted ? 'licensed' : String(legacy.html).includes('<b>Сингл') ? 'completed' : status(badges,badges,true),
+      status:restricted ? 'licensed' : Array.isArray(legacy.single) && legacy.single.some(value => value === true) ? 'completed' : status(badges,badges,true),
       tags:dedupe([category,age,...requireArray(legacy.tags,'GroupLe tags').map(normalizeText),...creation])});
   }
   const title = normalizeText(data.modernTitle ?? data.metaTitle); if (!title) throw parseError('GroupLe modern title is missing.');

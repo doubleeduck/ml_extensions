@@ -28,3 +28,11 @@ test('failed title loads are retried and factory caches never share state', asyn
   await a({...request,method:'POST'}); await a({...request,method:'POST'}); assert.equal(calls,6);
   assert.throws(() => recent(fetch,{limit:0}),TypeError);
 });
+
+test('taxonomy cache accepts 128 entries and rejects unbounded configurations', async () => {
+  let calls=0; const lookup=recent(async key=>{calls++;return key;},{limit:128});
+  for(let i=0;i<128;i++) await lookup(i);
+  await lookup(0); assert.equal(calls,128);
+  await lookup(128); await lookup(1); assert.equal(calls,130);
+  assert.throws(()=>recent(()=>null,{limit:129}),TypeError);
+});

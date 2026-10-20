@@ -1,3 +1,4 @@
+import {recent} from '../core/recent.mjs';
 import {chapter, filter, isoDate, manga, record, records, string} from '../core/data.mjs';
 import {finiteNumber, requireArray, requireRecord, requireText, urlWithQuery} from '../core/http.mjs';
 import {tagGroups} from './mangadex_tags.mjs';
@@ -102,6 +103,9 @@ export default function createMangaDex(ctx) {
       headers:{Accept:'application/json',Origin:'https://mangadex.org',Referer:'https://mangadex.org/'}});
     return requireRecord(response.body);
   }
+  const related = recent(async mangaId => [...new Set(data(await json(`/manga/${encodeURIComponent(mangaId)}/recommendation`))
+    .flatMap(item => records(requireRecord(item).relationships)).filter(item => item.type === 'manga')
+    .map(item => string(item.id)).filter(id => id && id !== mangaId))]);
   function data(payload) { return requireArray(payload.data); }
   function collection(payload) { return data(payload).map(item => parseManga(item,language)); }
   async function byIds(ids) {
@@ -163,9 +167,7 @@ export default function createMangaDex(ctx) {
     },
     async getRecommendations({mangaId,page = 1}) {
       const normalized = Math.max(1,page);
-      const ids = [...new Set(data(await json(`/manga/${encodeURIComponent(mangaId)}/recommendation`))
-        .flatMap(item => records(requireRecord(item).relationships)).filter(item => item.type === 'manga')
-        .map(item => string(item.id)).filter(id => id && id !== mangaId))];
+      const ids = await related(mangaId);
       const pageIds = ids.slice((normalized-1)*20,normalized*20), map = await byIds(pageIds);
       return {page:normalized,hasNextPage:normalized*20 < ids.length,items:pageIds.map(id => map.get(id)).filter(Boolean)};
     },

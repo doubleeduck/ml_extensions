@@ -80,9 +80,9 @@ export function parseDetails({preview,details,settings}) {
     artist:labels(source.artists).join(', ') || labels(preview?.artists).join(', ') || null,
     status:nestedLabel(source.status) ?? nestedLabel(preview?.status),
     type:nestedLabel(source.type) ?? nestedLabel(source.format) ?? nestedLabel(preview?.type),
-    ageRating:nestedLabel(source.caution) ?? nestedLabel(preview?.caution),
+    ageRating:nestedLabel(source.ageRestriction ?? source.caution) ?? nestedLabel(preview?.ageRestriction ?? preview?.caution),
     rating:finiteNumber(record(source.rating).average,null) ?? finiteNumber(record(preview?.rating).average,null),
-    releaseYear:year(source) ?? year(preview ?? source),tags:uniqueLabels([...labels(details?.genres),...labels(details?.tags)])});
+    releaseYear:year(source) ?? year(preview ?? source),tags:uniqueLabels([...labels(source.genres),...labels(source.tags),...labels(source.format)])});
 }
 export function parseAccess(value, fallback = {}) {
   const restricted = value.restricted_view ?? fallback.restricted_view;
