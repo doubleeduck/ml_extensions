@@ -1,6 +1,6 @@
-# MangaLaunch Official Sources
+# MangaLaunch Unofficial Extensions
 
-Отдельный подписанный пакет **20 обычных источников** для MangaLaunch.
+Неофициальное расширение MangaLaunch: подписанный пакет **20 обычных источников** для MangaLaunch.
 Идентификатор расширения: `official.mangalaunch.sources`.
 NSFW-источники вынесены в отдельный репозиторий `nsfw_ml_extensions`; в этом пакете они не регистрируются и их отдельные модули и иконки отсутствуют.
 
@@ -26,6 +26,10 @@ NSFW-источники вынесены в отдельный репозито�
 - **Shikimori** — `ru.shikimori`
 - **AniList** — `en.anilist`
 - **MyAnimeList** — `en.myanimelist`
+
+Технические extensionId, имена архивов, publisher KeyId и GitHub environment
+сохраняют прежние значения с `official` для совместимости обновлений.
+Отображаемое название пакета — Unofficial Extensions.
 
 ## Установка и переход
 

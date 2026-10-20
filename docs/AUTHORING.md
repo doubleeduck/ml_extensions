@@ -35,8 +35,8 @@ assets/…               # только используемые data/icon asset
 tests/…                # developer-only, в пакет не включаются
 ```
 
-Официальный пул собирается отдельно: `src/definitions.mjs` → один manifest с
-20 sourceId; `src/index.mjs` → dispatcher фабрик. Новый официальный source требует
+Пул Unofficial Extensions собирается отдельно: `src/definitions.mjs` → один manifest с
+20 sourceId; `src/index.mjs` → dispatcher фабрик. Новый source пакета требует
 обновить обе регистрации и tests. NSFW и обычные источники выпускаются раздельными пакетами; см. SOURCE_BUNDLE_SPLIT_RU.md.
 
 Общие engines должны быть фабриками. Изменяемое состояние, cursors и кэши
@@ -80,7 +80,7 @@ undefined/NaN. Возвращайте только JSON data, не DOM/class ins
 Иконка — PNG/JPEG/WebP до 256 КиБ, объявленный в `files` подписанный payload.
 Приложение не содержит реестра иконок сайтов; отсутствие оформления даёт
 нейтральный значок. Изменения оформления применяются при обновлении расширения.
-Официальный packer включает все объявленные source icons автоматически.
+Packer включает все объявленные source icons автоматически.
 
 Опциональный `network.transportProfile:'host.platform.v1'` выбирает штатный
 платформенный транспорт приложения (WinHTTP/Cronet) одновременно для HTTP и
@@ -180,7 +180,7 @@ label/default/ограничениями. `ctx.settings.get/set` видят то
 подбору трекера. Опциональный `legacyNamespace` переносит типизированные поля
 старого source-owned JSON blob без таблиц имён сайтов в приложении.
 
-В официальном пакете `network.maxConcurrentRequests` равен 6; хост принимает
+В пакете Unofficial Extensions `network.maxConcurrentRequests` равен 6; хост принимает
 1–8. Общий scheduler допускает 32 HTTP, до 8 на origin, очередь 1024. Media
 budget — 16 всего / 8 на источник; реальная concurrency ограничена также
 manifest и общим scheduler. Эти декларации требуют обновлённого приложения.
@@ -219,7 +219,7 @@ during requests; update/disable/cancel; reader/download/OCR. Node fixture про
 парсер, **не** ОС-изоляцию и не все app DTO semantics. Native probe не заменяет
 живую проверку API, авторизации и media на Android/Windows release.
 
-Команды из корня официального developer repo:
+Команды из корня developer repo расширения:
 
 ```powershell
 npm ci --ignore-scripts
@@ -242,7 +242,7 @@ hash/size каждого payload и воспроизводимый ZIP с фик
 версия требует нового SemVer; никогда не перезаписывайте опубликованный SemVer.
 Смена/отзыв ключа — явная операция владельца, не инструкция скачанного manifest.
 
-Официальные исходники имеют режим **«Все права защищены»**. Наличие в GitHub не
+Исходники расширения имеют режим **«Все права защищены»**. Наличие в GitHub не
 является разрешением на распространение. Для своего проекта задайте собственную
 лицензию и отдельно соблюдайте лицензии используемых third-party зависимостей.
 Release CI/ключи/защищённое окружение описаны в BUILD_AND_RELEASE.md.

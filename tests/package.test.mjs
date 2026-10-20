@@ -5,7 +5,7 @@ import {readFile,readdir} from 'node:fs/promises';
 import {registrations,sourceDefinitions,manifestDefinition} from '../src/definitions.mjs';
 import createSource from '../src/index.mjs';
 import {canonicalJson,packageZip,signedManifest,verifyPackage} from '../tools/package_format.mjs';
-test('official package registers 20 standard IDs and its offline factories never perform IO', () => {
+test('unofficial package registers 20 standard IDs and its offline factories never perform IO', () => {
   assert.equal(registrations.length,20); assert.equal(new Set(registrations.map(source => source.id)).size,20);
   assert.deepEqual(registrations.map(source => source.id),["ru.inkstory","ru.mangadex","en.mangadex","ru.mangalib","ru.readmanga","ru.mintmanga","ru.seimanga","ru.selfmanga","ru.usagi","ru.rumix","ru.senkuro","en.mangafox","en.mangakakalot","en.weebcentral","ru.mangachan","ru.mangashi","ru.desu","ru.shikimori","en.anilist","en.myanimelist"]);
   assert.ok(registrations.every(source => source.isNsfw === false));
@@ -19,7 +19,7 @@ test('official package registers 20 standard IDs and its offline factories never
   }
   for (const id of ['missing','ru.nsfw.mintmanga','ru.nudemoon','ru.allhentai','ru.nsfw.nudemoon']) assert.throws(() => createSource({sourceId:id}),error=>error.code==='source_unavailable');
 });
-test('official ZIP/signature payload is reproducible and rejects tampering independently', () => {
+test('unofficial ZIP/signature payload is reproducible and rejects tampering independently', () => {
   const {privateKey} = generateKeyPairSync('ed25519'), pem = privateKey.export({type:'pkcs8',format:'pem'}), payload = new Map([['src/index.mjs',Buffer.from('export default ()=>({});')]]);
   for (const definition of registrations) payload.set(definition.branding.icon,Buffer.from('Fixture image bytes'));
   const signed = signedManifest(manifestDefinition({version:'1.0.0',publisherKeyId:'test-generated'}),payload,pem);
@@ -29,7 +29,7 @@ test('official ZIP/signature payload is reproducible and rejects tampering indep
   assert.equal(canonicalJson({z:1,a:{b:2,a:3}}),'{"a":{"a":3,"b":2},"z":1}');
 });
 
-test('every official source declares its own packaged raster branding without app assets', async () => {
+test('every bundled source declares its own packaged raster branding without app assets', async () => {
   for (const source of sourceDefinitions()) {
     assert.match(source.branding.icon,/^assets\/source_logos\/[a-z0-9]+\.(png|jpg)$/u);
     assert.match(source.branding.accentColor,/^#[A-F0-9]{6}$/u);

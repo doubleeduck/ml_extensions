@@ -3,7 +3,7 @@
 
 # Build, verification and release
 
-This directory is the root of the intended standalone official-source repository.
+This directory is the root of the intended standalone unofficial extension repository.
 Its `.github/workflows` become active only when this directory is published as
 that repository; they do not publish anything from the current app workspace.
 The code/package is **All rights reserved**. Do not substitute an open-source
@@ -20,7 +20,7 @@ not bundled in `.mlsource`, and Flutter builds do not invoke npm.
 Generate a local Ed25519 key with `tools/pack.mjs --generate-key PATH --key-id ID`.
 Keep the private output in `.keys` or another ignored private directory. Build
 with `--key PATH --key-id ID --version SEMVER`; output defaults to `dist`.
-This local/development key is not an official app trust root. Never upload it.
+This local/development key is not a production trust root. Never upload it.
 The same key/payload/version produces byte-identical archives.
 
 The packer verifies ZIP entries, hashes, canonical manifest and Ed25519 signature.

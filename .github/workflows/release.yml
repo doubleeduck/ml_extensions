@@ -1,4 +1,4 @@
-name: Protected source package release
+name: MangaLaunch Unofficial Extensions release
 on:
   push:
     tags: ['v[0-9]*']

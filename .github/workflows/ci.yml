@@ -1,4 +1,4 @@
-name: Source package checks
+name: MangaLaunch Unofficial Extensions checks
 on:
   pull_request:
   push:

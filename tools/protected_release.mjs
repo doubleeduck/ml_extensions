@@ -16,7 +16,7 @@ if (process.argv.includes('--publish')) {
   const file = 'dist/official.mangalaunch.sources.mlsource';
   for (const suffix of ['', '.public.json','.sha256']) await readFile(`${file}${suffix}`);
   for (const name of ['extensions-index.json','extensions-index.ed25519']) await readFile(`dist/${name}`);
-  run('gh',['release','create',tag,'--verify-tag','--title',`Unofficial sources ${version}`,'--notes','Signed handwritten JS source package. All rights reserved.',
+  run('gh',['release','create',tag,'--verify-tag','--title',`MangaLaunch Unofficial Extensions ${version}`,'--notes','Signed unofficial JS source extensions. All rights reserved.',
     file,`${file}.public.json`,`${file}.sha256`,'dist/extensions-index.json','dist/extensions-index.ed25519',...(version.includes('-') ? ['--prerelease'] : [])]);
 } else {
   const keyId = process.env.MLSOURCE_PUBLISHER_KEY_ID, encoded = process.env.MLSOURCE_SIGNING_KEY_BASE64;
