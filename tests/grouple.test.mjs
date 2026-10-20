@@ -2,6 +2,32 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {parseFilters,searchParameters} from '../src/engines/grouple-filters.mjs';
 import {parseCatalog,parseChapters,parseReader} from '../src/engines/grouple.mjs';
+import {sourceDefinitions} from '../src/definitions.mjs';
+
+test('AllHentai has its own Qawa SSO login, nested return URI and scoped session origins', () => {
+  const definitions = sourceDefinitions(), allhentai = definitions.find(source => source.id === 'ru.allhentai');
+  const login = new URL(allhentai.auth.loginUrl);
+  assert.equal(login.origin,'https://z.qawa.org');
+  assert.equal(login.pathname,'/internal/auth/login');
+  assert.equal(login.searchParams.get('siteId'),'1');
+  assert.equal(login.searchParams.get('targetUri'),'/login/continueSso?siteId=1&targetUri=%2F');
+  const continuation = new URL(login.searchParams.get('targetUri'),login.origin);
+  assert.equal(continuation.pathname,'/login/continueSso');
+  assert.equal(continuation.searchParams.get('siteId'),'1');
+  assert.equal(continuation.searchParams.get('targetUri'),'/');
+  assert.equal(allhentai.auth.profileId,'host.grouple.v1');
+  assert.equal(allhentai.auth.completionUrl,allhentai.baseUrl);
+  assert.equal(allhentai.auth.successUrl,'https://z.qawa.org/');
+  assert.deepEqual(allhentai.auth.cookieOrigins,['https://20.allhen.online','https://allhen.online','https://z.qawa.org','https://qawa.org']);
+  assert.deepEqual(allhentai.network.authOrigins,allhentai.auth.cookieOrigins);
+  assert.ok(allhentai.network.origins.includes(login.origin));
+  for (const source of definitions.filter(source => source.auth?.profileId === 'host.grouple.v1' && source.id !== 'ru.allhentai')) {
+    assert.equal(source.auth.loginUrl,'https://3.grouple.co/internal/auth/login');
+    assert.equal(source.auth.successUrl,'https://3.grouple.co/');
+    assert.ok(!source.auth.cookieOrigins.some(value => value.includes('qawa.org')));
+    assert.ok(!source.network.origins.includes(login.origin));
+  }
+});
 test('GroupLe API filters, repeated tri-state IDs, special status names and year bounds', () => {
   const filters = parseFilters({scripts:[`window.__FILTERS.sortType={"RATING":"Popular"};window.__FILTERS.years={min:1900,max:2026};window.__FILTERS.genre={"1":"Action"};`],rows:[]},[['4','Tag']]);
   assert.deepEqual(filters.map(value => value.key),['sortType','genre','tags','years:min','years:max']);

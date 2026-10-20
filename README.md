@@ -1,12 +1,12 @@
 # Official MangaLaunch source bundle
 
 The complete pool is one separately installed, signed `.mlsource` package with
-all 29 persistent source IDs. The app is wired to the dynamic JS registry only:
+all 30 persistent source IDs, including `ru.nudemoon`. The app is wired to the dynamic JS registry only:
 there is no built-in Dart source fallback. Strict analysis, 1066 app tests
 (one opt-in live skip) and 104 Node tests pass as of 2026-10-19.
 Windows/Android arm64 Release builds passed for the earlier engine integration;
 the latest UI changes have not been rebuilt into APK/EXE files. Physical-device and full live-source acceptance remain
-separate release gates; offline fixtures are not a 29-source live certification.
+separate release gates; offline fixtures are not a 30-source live certification.
 
 Sources are handwritten ES modules; Dart is never compiled into this package.
 The app imports `manga_sources/source_contract.dart` (DTOs/interfaces only).
@@ -17,10 +17,10 @@ Shared engines/helpers are included once; source instances never share sessions.
 Current parser fixture tests: `node --test tests/*.test.mjs` (Node 22+).
 `node:` imports are test-tool dependencies only and must not enter package payload.
 
-Handwritten modules now cover **all 29 existing source IDs**, through shared
+Handwritten modules cover **all 29 original source IDs plus Nude Moon**, through shared
 LibGroup, GroupLe, MangaDex, Senkuro and Chan engines plus site-specific modules.
 The full signed archive independently verifies in the Dart app and all 29 offline
-factories probe in the native Windows LPAC sandbox. New HTML/GraphQL ports also
+factories probed in the native Windows LPAC sandbox during the original integration. New HTML/GraphQL ports also
 have real host-parser/native fixture parity tests against the preserved Dart
 parsers. This is not full live-network/media/auth/migration acceptance.
 MyAnimeList still needs the app host's
@@ -28,6 +28,14 @@ endpoint-scoped client-ID configuration; no secret/client ID is embedded in JS.
 Build the host SDK for native fixture tests with `node tools/build_host_sdk.mjs`.
 It supplies the app runtime web primitives, not site parsers, and has no external
 runtime imports. See core-js/esbuild upstream documentation linked in the SDK.
+
+Nude Moon supplies popular/latest catalogs, paginated sorting, details, one
+chapter per gallery, full reader page URLs and browser cookie login. Numeric
+gallery IDs remain stable across different title slugs. Search follows the
+site's Windows-1251 form encoding. The public search endpoint currently returns
+incomplete HTTP-200 pages; these raise a parse error. A fresh native HTTP session
+also received HTTP 403 while the browser could open the site. See
+[the source/auth verification notes](docs/NUDEMOON_AND_ALLHENTAI.md).
 
 The app bundles a generated, trusted copy of the SDK. `npm run build:host` creates
 `dist/host-bootstrap.js`. After SDK changes, the app developer must update its

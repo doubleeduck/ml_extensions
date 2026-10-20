@@ -30,7 +30,7 @@ The source package contains no Dart/native implementation or runtime Node import
 The Node fixtures and offline factory probe do not prove live source parity.
 In the app repository, run all source fixture/native differential tests, the
 full app test/analyzer suite and Android/Windows release builds. Confirm all
-29 source IDs, existing library/history/download IDs, private sessions, login/
+30 source IDs (the original 29 plus `ru.nudemoon`), existing library/history/download IDs, private sessions, login/
 logout, filters, recommendations, pages, pinned media/downloads/OCR, background
 updates, installation/update/rollback/disable/remove and simultaneous search.
 Check physical arm64/release and Windows release behavior without clearing or
@@ -44,7 +44,7 @@ new APK/EXE files; Windows/Android arm64 Release builds cover the earlier engine
 integration. A separate live MangaDex RU/EN check covers filters, popular/latest,
 details, recommendations, chapter metadata and page URL declarations without
 downloading images or using user credentials.
-Physical-device and full 29-source live/auth/media acceptance remain outstanding.
+Physical-device and full 30-source live/auth/media acceptance remain outstanding.
 Do not treat fixture results as permission to publish a production release.
 
 For manual packaging/publication, follow the Russian step-by-step

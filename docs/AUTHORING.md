@@ -33,7 +33,7 @@ tests/…                # developer-only, в пакет не включаютс
 ```
 
 Официальный пул собирается отдельно: `src/definitions.mjs` → один manifest с
-29 sourceId; `src/index.mjs` → dispatcher фабрик. Новый официальный source требует
+30 sourceId; `src/index.mjs` → dispatcher фабрик. Новый официальный source требует
 обновить обе регистрации и tests. Не дробите официальный пул по сайтам.
 
 Общие engines должны быть фабриками. Изменяемое состояние, cursors и кэши

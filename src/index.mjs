@@ -14,6 +14,7 @@ import createDesu from './sources/desu.mjs';
 import createShikimori from './sources/shikimori.mjs';
 import createAniList from './sources/anilist.mjs';
 import createMyAnimeList from './sources/myanimelist.mjs';
+import createNudeMoon from './sources/nudemoon.mjs';
 
 const factories = new Map([
   ['ru.inkstory',createInkStory],...['ru.mangadex','en.mangadex'].map(id => [id,createMangaDex]),
@@ -23,6 +24,7 @@ const factories = new Map([
   ['all.pururin',createPururin],['en.mangafox',createMangaFox],['en.mangakakalot',createMangaKakalot],['en.weebcentral',createWeebCentral],
   ['ru.hchan',createChan],['ru.mangachan',createChan],['ru.mangashi',createMangaShi],['ru.desu',createDesu],
   ['ru.shikimori',createShikimori],['en.anilist',createAniList],['en.myanimelist',createMyAnimeList],
+  ['ru.nudemoon',createNudeMoon],
 ]);
 export default function createSource(context) {
   const factory = factories.get(context.sourceId);

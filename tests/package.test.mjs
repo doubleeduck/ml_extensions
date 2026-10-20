@@ -5,8 +5,8 @@ import {readFile,readdir} from 'node:fs/promises';
 import {registrations,sourceDefinitions,manifestDefinition} from '../src/definitions.mjs';
 import createSource from '../src/index.mjs';
 import {canonicalJson,packageZip,signedManifest,verifyPackage} from '../tools/package_format.mjs';
-test('official package registers exactly all 29 persistent IDs and its offline factories never perform IO', () => {
-  assert.equal(registrations.length,29); assert.equal(new Set(registrations.map(source => source.id)).size,29);
+test('official package registers 30 persistent IDs and its offline factories never perform IO', () => {
+  assert.equal(registrations.length,30); assert.equal(new Set(registrations.map(source => source.id)).size,30);
   const deny = () => { throw Error('Factory must not perform IO.'); };
   for (const definition of sourceDefinitions()) {
     assert.equal('_module' in definition,false);
@@ -20,7 +20,7 @@ test('official ZIP/signature payload is reproducible and rejects tampering indep
   const {privateKey} = generateKeyPairSync('ed25519'), pem = privateKey.export({type:'pkcs8',format:'pem'}), payload = new Map([['src/index.mjs',Buffer.from('export default ()=>({});')]]);
   const signed = signedManifest(manifestDefinition({version:'1.0.0',publisherKeyId:'test-generated'}),payload,pem);
   const files = new Map([['manifest.json',signed.bytes],['signature.ed25519',signed.signature],...payload]), first = packageZip(files), second = packageZip(new Map([...files].reverse()));
-  assert.deepEqual(first,second); assert.equal(verifyPackage(first,signed.publicKey).sources.length,29);
+  assert.deepEqual(first,second); assert.equal(verifyPackage(first,signed.publicKey).sources.length,30);
   const corrupt = Buffer.from(first); corrupt[40] ^= 1; assert.throws(() => verifyPackage(corrupt,signed.publicKey));
   assert.equal(canonicalJson({z:1,a:{b:2,a:3}}),'{"a":{"a":3,"b":2},"z":1}');
 });

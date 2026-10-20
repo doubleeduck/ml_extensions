@@ -27,10 +27,18 @@ const libgroup = (id,name,host,siteId,nsfw = false) => source(id,name,host,'engi
   auth:{...cookieAuth(host,'/ru'),profileId:'host.libgroup.v1',cookieOrigins:[...new Set([origin(host),...libApis,...libCookieRoots])],sessionExport:{headers:['Cookie','Authorization','X-XSRF-TOKEN'],values:['accessToken','csrfToken']}},
   template:'/ru/manga/{id}',bindings:{author:'authors',artist:'artists',tags:'tags'},media:{sendOrigin:true}});
 const groupleCookieRoots = {'a.zazaza.me':'zazaza.me','2.mintmanga.one':'mintmanga.one','1.seimanga.me':'seimanga.me','1.selfmanga.live':'selfmanga.live','20.allhen.online':'allhen.online'};
-const grouple = (id,name,host,nsfw = false) => source(id,name,host,'engines/grouple.mjs',{engine:'GroupLe JS',nsfw,custom:true,refresh:true,recommendations:true,
+const grouple = (id,name,host,nsfw = false) => {
+  const authOrigin = id === 'ru.allhentai' ? 'https://z.qawa.org' : 'https://3.grouple.co';
+  const login = new URL('/internal/auth/login',authOrigin);
+  if (id === 'ru.allhentai') {
+    // Observed AllHentai SSO redirect. Encode the nested return URI exactly once.
+    login.search = new URLSearchParams({siteId:'1',targetUri:'/login/continueSso?siteId=1&targetUri=%2F'}).toString();
+  }
+  return source(id,name,host,'engines/grouple.mjs',{engine:'GroupLe JS',nsfw,custom:true,refresh:true,recommendations:true,
   template:'/{id}',encoding:'path',settings:{version:1,profileId:'host.grouple.v1'},
-  auth:{...cookieAuth(host),profileId:'host.grouple.v1',loginUrl:'https://3.grouple.co/internal/auth/login',cookieOrigins:[origin(host),...(groupleCookieRoots[host] ? [origin(groupleCookieRoots[host])] : []),'https://3.grouple.co','https://grouple.co'],completionUrl:origin(host),successUrl:'https://3.grouple.co/',sessionExport:{headers:['Cookie'],values:[]}},
-  origins:['https://3.grouple.co'],images:['https://one-way.work','https://manga1.ru','https://manga2.ru','https://manga3.ru','https://mangap.ru','https://mangapoisk.org','https://readmanga.io',...(id === 'ru.allhentai' ? ['https://aaa200.one'] : [])],media:{sendOrigin:true}});
+  auth:{...cookieAuth(host),profileId:'host.grouple.v1',loginUrl:login.href,cookieOrigins:[origin(host),...(groupleCookieRoots[host] ? [origin(groupleCookieRoots[host])] : []),authOrigin,id === 'ru.allhentai' ? 'https://qawa.org' : 'https://grouple.co'],completionUrl:origin(host),successUrl:`${authOrigin}/`,sessionExport:{headers:['Cookie'],values:[]}},
+  origins:[authOrigin],images:['https://one-way.work','https://manga1.ru','https://manga2.ru','https://manga3.ru','https://mangap.ru','https://mangapoisk.org','https://readmanga.io',...(id === 'ru.allhentai' ? ['https://aaa200.one'] : [])],media:{sendOrigin:true}});
+};
 const imhentai = language => source(`${language}.imhentai`,'IMHentai','imhentai.xxx','sources/imhentai.mjs',{nsfw:true,custom:true,recommendations:true,auth:cookieAuth('imhentai.xxx'),
   template:'/gallery/{id}/',images:['https://imhentai.xxx','https://imhentai.me','https://imhentai.com'],bindings:{author:'groups',artist:'artists',tags:'tags'}});
 const senkuro = (adult = false) => {
@@ -60,6 +68,7 @@ export const registrations = [
   source('ru.hchan','H-chan','x2.h-chan.me','engines/chan.mjs',{nsfw:true,custom:true,recommendations:true,capabilities:['latest','search','filters'],template:'/{id}',encoding:'path',images:['https://h-chan.me'],bindings:{tags:'tags'}}),
   source('ru.mangachan','MangaChan','im.manga-chan.me','engines/chan.mjs',{recommendations:true,template:'/{id}',encoding:'path',images:['https://manga-chan.me'],bindings:{tags:'genres'}}),
   source('ru.mangashi','MangaShi','manga-shi.org','sources/mangashi.mjs',{refresh:true,recommendations:true,auth:cookieAuth('manga-shi.org'),template:'/{id}',encoding:'path',images:['https://manga-shi.org'],bindings:{tags:'tags'}}),
+  source('ru.nudemoon','Nude Moon','nude-moon.org','sources/nudemoon.mjs',{nsfw:true,auth:cookieAuth('nude-moon.org','/'),template:'/{id}-manga.html'}),
   source('ru.desu','Desu','desu.uno','sources/desu.mjs',{custom:true,refresh:true,recommendations:true,template:'/{id}',encoding:'path',images:['https://desu.uno','https://desu.me'],bindings:{tags:'genres'}}),
   metadata('ru.shikimori','Shikimori','shikimori.io','sources/shikimori.mjs',{template:'/mangas/{id}',login:'/users/sign_in',images:['https://shikimori.io','https://shikimori.one']}),
   metadata('en.anilist','AniList','anilist.co','sources/anilist.mjs',{origins:['https://graphql.anilist.co'],images:['https://anilist.co'],login:'/login'}),

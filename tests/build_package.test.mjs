@@ -34,7 +34,7 @@ test('build-package.ps1 produces all five public release assets, independently v
   const manifest = verifyPackage(archive, Buffer.from(publicRecord.publicKey, 'base64'));
   assert.equal(manifest.version, '1.2.3-dev.1');
   assert.equal(manifest.publisherKeyId, 'isolated-test-key');
-  assert.equal(new Set(manifest.sources.map(s => s.id)).size, 29);
+  assert.equal(new Set(manifest.sources.map(s => s.id)).size, 30);
   assert.deepEqual(publicRecord.sourceIds, manifest.sources.map(s => s.id));
   assert.deepEqual(publicRecord.extensionIds, [manifest.extensionId]);
   const digest = createHash('sha256').update(archive).digest('hex');
