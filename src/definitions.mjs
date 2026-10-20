@@ -78,7 +78,7 @@ export const registrations = [
   source('ru.hchan','H-chan','x2.h-chan.me','engines/chan.mjs',{nsfw:true,custom:true,recommendations:true,capabilities:['latest','search','filters'],template:'/{id}',encoding:'path',images:['https://h-chan.me'],bindings:{tags:'tags'}}),
   source('ru.mangachan','MangaChan','im.manga-chan.me','engines/chan.mjs',{recommendations:true,template:'/{id}',encoding:'path',images:['https://manga-chan.me'],bindings:{tags:'genres'}}),
   source('ru.mangashi','MangaShi','manga-shi.org','sources/mangashi.mjs',{refresh:true,recommendations:true,auth:cookieAuth('manga-shi.org'),template:'/{id}',encoding:'path',images:['https://manga-shi.org'],bindings:{tags:'tags'}}),
-  source('ru.nudemoon','Nude Moon','nude-moon.org','sources/nudemoon.mjs',{nsfw:true,auth:cookieAuth('nude-moon.org','/'),template:'/{id}-manga.html',network:{transportProfile:'host.platform.v1'}}),
+  source('ru.nudemoon','Nude Moon','nude-moon.org','sources/nudemoon.mjs',{nsfw:true,refresh:true,bindings:{tags:'tags'},auth:cookieAuth('nude-moon.org','/'),template:'/{id}-manga.html',network:{transportProfile:'host.platform.v1'}}),
   source('ru.desu','Desu','desu.uno','sources/desu.mjs',{custom:true,refresh:true,recommendations:true,template:'/{id}',encoding:'path',images:['https://desu.uno','https://desu.me'],bindings:{tags:'genres'}}),
   metadata('ru.shikimori','Shikimori','shikimori.io','sources/shikimori.mjs',{template:'/mangas/{id}',login:'/users/sign_in',images:['https://shikimori.io','https://shikimori.one']}),
   metadata('en.anilist','AniList','anilist.co','sources/anilist.mjs',{origins:['https://graphql.anilist.co'],images:['https://anilist.co'],login:'/login'}),

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import createNudeMoon,{buildFilters,catalogUrl,encodeSearchTerm,normalizeId,parseListing,parseDetails,parsePages} from '../src/sources/nudemoon.mjs';
+import createNudeMoon,{buildFilters,catalogUrl,encodeSearchTerm,normalizeId,parseListing,parseDetails,parsePages,parseTagOptions} from '../src/sources/nudemoon.mjs';
 import {sourceDefinitions} from '../src/definitions.mjs';
 
 const details = {title:'Демо / Demo',cover:'/images/thumb/2610/208.jpg',description:'Описание\n манги',authors:['Автор','Автор'],
@@ -18,6 +18,7 @@ test('Nude Moon registration declares adult Russian reading, scoped auth/media a
   assert.equal(source.auth.loginUrl,'https://nude-moon.org/');
   assert.equal(source.web.mangaUrlTemplate,'/{id}-manga.html');
   assert.deepEqual(source.capabilities,['browse','latest','search','filters','account']);
+  assert.equal(source.supportsFilterRefresh,true); assert.deepEqual(source.filterBindings,{tags:'tags'});
 });
 
 test('Nude Moon IDs survive different slugs, reader URLs, mirror hosts and query strings', () => {
@@ -46,6 +47,50 @@ test('Nude Moon search matches Windows-1251 browser form encoding for every defi
     assert.equal(encodeSearchTerm(char),`%${byte.toString(16).toUpperCase()}`);
   }
   assert.equal(encodeSearchTerm('Ё ё &+😀'),'%A8+%B8+%26%2B%26%23128512%3B');
+});
+
+const tagRows = {tags:[{href:'/tags/романтика+',label:' романтика '},
+  {href:'/tags/%D0%B1%D0%B5%D0%B7_%D1%86%D0%B5%D0%BD%D0%B7%D1%83%D1%80%D1%8B+',label:'без цензуры'},
+  {href:'/tags/x-ray+',label:'x-ray'}]};
+
+test('Nude Moon tag options use sidebar tokens, readable labels, deduplication and a multi-select filter', () => {
+  const options = parseTagOptions({tags:[...tagRows.tags,tagRows.tags[0],
+    {href:'https://example.org/tags/other+',label:'Foreign'}, {href:'/tags/bad%26views+',label:'Bad'},
+    {href:'/tags/tag+&date',label:'Sort link'}, {href:'/tag/detail',label:'Detail tag'},
+    {href:'/tags/empty+',label:' '}, {href:'/tags/%ZZ+',label:'Broken encoding'}]});
+  assert.deepEqual(options,[['романтика','романтика'],['без_цензуры','без цензуры'],['x-ray','x-ray']]);
+  const tags = buildFilters(options).find(filter => filter.key === 'tags');
+  assert.equal(tags.kind,'multiSelect'); assert.deepEqual(tags.defaultValues,[]);
+  assert.deepEqual(tags.options.map(option => [option.value,option.label]),options);
+  for (const input of [{},{tags:[]},{tags:[{href:'/tag/not-a-filter',label:'Tag'}]}]) assert.throws(() => parseTagOptions(input),{code:'parse_error'});
+});
+
+test('Nude Moon combines all selected tags with sorting and paging in the site path syntax', () => {
+  const selectedFilters = {tags:['романтика','без_цензуры','романтика','x-ray'],sort:['like']};
+  const path = '/tags/романтика+без_цензуры+x-ray+&like';
+  assert.equal(decodeURI(catalogUrl({selectedFilters})),`https://nude-moon.org${path}`);
+  assert.equal(decodeURI(catalogUrl({page:2,selectedFilters})),`https://nude-moon.org${path}&rowstart=30`);
+  assert.equal(decodeURI(catalogUrl({selectedFilters},'views')),`https://nude-moon.org${path.replace('&like','&views')}`);
+  assert.equal(catalogUrl({selectedFilters:{tags:[]}}),'https://nude-moon.org/all_manga?date=');
+  assert.equal(catalogUrl({searchTerm:'Demo',selectedFilters}),'https://nude-moon.org/search?stext=Demo');
+  for (const tags of [['a&views'],['a+b'],['../bad'],[''],[null],'not-an-array']) assert.throws(() => catalogUrl({selectedFilters:{tags}}),{code:'parse_error'});
+});
+
+test('Nude Moon loads current tag options per instance, caches them and explicitly refreshes without caching failures', async () => {
+  let reply = tagRows;
+  const {ctx,requests,projections} = context({extract:() => reply}), source = createNudeMoon(ctx);
+  assert.equal((await source.getFilters())[1].options.length,3);
+  await source.getFilters(); assert.equal(requests.length,1);
+  await createNudeMoon(ctx).getFilters(); assert.equal(requests.length,2);
+  reply = {tags:[{href:'/tags/new_tag+',label:'Новый тег'}]};
+  assert.equal((await source.getFilters({refresh:true}))[1].options[0].value,'new_tag');
+  assert.equal(requests.length,3); assert.ok(requests.every(input => input.url === 'https://nude-moon.org/all_manga'));
+  assert.equal(projections[0].fields.tags.selector,'a[title^="Поиск по жанру"][href^="/tags/"]');
+  reply = {tags:[]}; await assert.rejects(source.getFilters({refresh:true}),{code:'parse_error'});
+  assert.equal((await source.getFilters())[1].options[0].value,'new_tag');
+  const failed = createNudeMoon(ctx);
+  await assert.rejects(failed.getFilters(),{code:'parse_error'});
+  reply = tagRows; assert.equal((await failed.getFilters())[1].options.length,3);
 });
 
 test('Nude Moon valid empty paging differs from incomplete HTTP-200 search responses', () => {

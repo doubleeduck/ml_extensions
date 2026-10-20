@@ -29,7 +29,8 @@ Build the host SDK for native fixture tests with `node tools/build_host_sdk.mjs`
 It supplies the app runtime web primitives, not site parsers, and has no external
 runtime imports. See core-js/esbuild upstream documentation linked in the SDK.
 
-Nude Moon supplies popular/latest catalogs, paginated sorting, details, one
+Nude Moon supplies popular/latest catalogs, paginated sorting, multiple tag
+selection with refreshable options loaded from the site, details, one
 chapter per gallery, full reader page URLs and browser cookie login. Numeric
 gallery IDs remain stable across different title slugs. Search follows the
 site's Windows-1251 form encoding. The public search endpoint currently returns

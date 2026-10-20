@@ -38,12 +38,39 @@ function resolve(raw) {
   catch { return null; }
 }
 const cover = value => { const image = record(value); return resolve(image.lazy) ?? resolve(image.src); };
-export function buildFilters() { return [filter('sort','sort','Сортировка',sorts)]; }
+const tagToken = /^[\p{L}\p{N}_-]+$/u;
+export const tagsProjection = {fields:{tags:{selector:'a[title^="Поиск по жанру"][href^="/tags/"]',all:true,
+  fields:{href:{attr:'href'},label:{text:true}}}}};
+export function parseTagOptions(input) {
+  const seen = new Set(), options = [];
+  for (const row of requireArray(requireRecord(input,'Nude Moon filters').tags,'Nude Moon tag options')) {
+    const data = requireRecord(row,'Nude Moon tag'), label = normalizeText(data.label);
+    let value;
+    try {
+      const url = new URL(data.href,base);
+      if (url.origin !== base || url.search || url.hash) continue;
+      value = decodeURIComponent(url.pathname).match(/^\/tags\/([^/]+)\+$/u)?.[1];
+    } catch { continue; }
+    if (!value || !tagToken.test(value) || !label || seen.has(value)) continue;
+    seen.add(value); options.push([value,label]);
+  }
+  if (!options.length) throw parseError('Nude Moon tag options are missing.');
+  return options;
+}
+export function buildFilters(tags = []) {
+  return [filter('sort','sort','Сортировка',sorts),
+    {...filter('multiSelect','tags','Теги',tags),caption:'При поиске по названию не применяются.'}];
+}
 export function catalogUrl({page = 1,searchTerm = '',selectedFilters = {}} = {},forcedSort) {
   const sort = forcedSort ?? string(selectedFilters.sort?.[0]) ?? 'date';
   if (!sorts.some(([value]) => value === sort)) throw parseError('Nude Moon sort is invalid.');
   const term = normalizeText(searchTerm), offset = (Math.max(1,Math.trunc(page))-1)*30;
   if (term) return `${base}/search?stext=${encodeSearchTerm(term)}${offset ? `&rowstart=${offset}` : ''}`;
+  const tags = [...new Set(requireArray(selectedFilters.tags ?? [],'Nude Moon selected tags'))];
+  if (tags.some(value => typeof value !== 'string' || !tagToken.test(value))) throw parseError('Nude Moon tag is invalid.');
+  // Tag search uses UTF-8 path tokens and ampersand flags without a question
+  // mark. A trailing + matches the site's additive sidebar tag links.
+  if (tags.length) return `${base}/tags/${tags.map(encodeURIComponent).join('+')}+&${sort}${offset ? `&rowstart=${offset}` : ''}`;
   return urlWithQuery('/all_manga',base,{[sort]:'',...(offset ? {rowstart:offset} : {})});
 }
 export const listingProjection = {fields:{title:text('title'),items:{selector:'table.news_pic2',all:true,fields:{
@@ -90,6 +117,7 @@ export function parsePages(input) {
   return urls.map((imageUrl,index) => ({index,imageUrl}));
 }
 export default function createNudeMoon(ctx) {
+  let cachedTags = null;
   async function html(url,projection) {
     // The HTTP host decodes the site's declared Windows-1251 charset.
     const response = await ctx.http.request({method:'GET',url,responseType:'text',userAgentProfile:'browser',
@@ -99,7 +127,10 @@ export default function createNudeMoon(ctx) {
   }
   const details = id => html(`${base}/${requireId(id)}-manga.html`,detailsProjection);
   return {
-    async getFilters() { return buildFilters(); },
+    async getFilters({refresh = false} = {}) {
+      if (cachedTags == null || refresh) cachedTags = parseTagOptions(await html(`${base}/all_manga`,tagsProjection));
+      return buildFilters(cachedTags);
+    },
     async getPopular(query = {}) { return parseListing(await html(catalogUrl(query,'views'),listingProjection)); },
     async getLatest(query = {}) { return parseListing(await html(catalogUrl(query,'date'),listingProjection)); },
     async search(query = {}) { return parseListing(await html(catalogUrl(query),listingProjection)); },
