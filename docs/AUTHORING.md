@@ -73,6 +73,19 @@ undefined/NaN. Возвращайте только JSON data, не DOM/class ins
 
 ## 3. HTTP, HTML и media
 
+Оформление источника задаётся через `branding:{icon:'assets/site.png',accentColor:'#123456'}`.
+Иконка — PNG/JPEG/WebP до 256 КиБ, объявленный в `files` подписанный payload.
+Приложение не содержит реестра иконок сайтов; отсутствие оформления даёт
+нейтральный значок. Изменения оформления применяются при обновлении расширения.
+Официальный packer включает все объявленные source icons автоматически.
+
+Опциональный `network.transportProfile:'host.platform.v1'` выбирает штатный
+платформенный транспорт приложения (WinHTTP/Cronet) одновременно для HTTP и
+media. Без профиля остаётся прежний Dart-транспорт. Профиль не расширяет grants,
+не выполняет произвольный код и не отключает TLS/redirect/session/limit checks.
+Новые поля `branding` и `transportProfile` требуют приложения с их поддержкой;
+обновление одного `.mlsource` не изменяет исполняемый host-код.
+
 ```js
 const response = await ctx.http.request({
   method: 'GET', url: new URL('/api/titles', ctx.baseUrl).href,

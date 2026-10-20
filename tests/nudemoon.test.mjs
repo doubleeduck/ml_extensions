@@ -13,6 +13,7 @@ test('Nude Moon registration declares adult Russian reading, scoped auth/media a
   assert.equal(source.language,'ru'); assert.equal(source.isNsfw,true);
   assert.deepEqual(source.network.origins,['https://nude-moon.org']);
   assert.deepEqual(source.network.imageOrigins,['https://nude-moon.org']);
+  assert.equal(source.network.transportProfile,'host.platform.v1');
   assert.deepEqual(source.auth.cookieOrigins,['https://nude-moon.org']);
   assert.equal(source.auth.loginUrl,'https://nude-moon.org/');
   assert.equal(source.web.mangaUrlTemplate,'/{id}-manga.html');

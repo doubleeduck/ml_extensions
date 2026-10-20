@@ -43,6 +43,7 @@
         "parameters": {"type": "object", "maxProperties": 32, "additionalProperties": {"type": "string", "minLength": 1, "maxLength": 1024}},
         "filterBindings": {"type": "object", "additionalProperties": false, "properties": {"author": {"type": "string", "minLength": 1, "maxLength": 128}, "artist": {"type": "string", "minLength": 1, "maxLength": 128}, "tags": {"type": "string", "minLength": 1, "maxLength": 128}}},
         "web": {"type": "object", "additionalProperties": false, "required": ["mangaUrlTemplate", "idEncoding"], "properties": {"mangaUrlTemplate": {"type": "string", "minLength": 1, "maxLength": 1024, "pattern": "^/(?!/).*\\{id\\}"}, "idEncoding": {"enum": ["pathSegment", "path"]}, "idPart": {"type": "object", "additionalProperties": false, "required": ["separator", "index"], "properties": {"separator": {"type": "string", "minLength": 1, "maxLength": 8}, "index": {"type": "integer", "minimum": 0, "maximum": 8}}}}},
+        "branding": {"type": "object", "additionalProperties": false, "properties": {"icon": {"type": "string", "maxLength": 240, "pattern": "^assets/[A-Za-z0-9_./-]+\\.(png|jpg|jpeg|webp)$"}, "accentColor": {"type": "string", "pattern": "^#[0-9A-Fa-f]{6}$"}}},
         "network": {"$ref": "#/$defs/network"}, "media": {"$ref": "#/$defs/media"},
         "auth": {"$ref": "#/$defs/auth"}, "settings": {"$ref": "#/$defs/settings"}
       }
@@ -54,6 +55,7 @@
         "origins": {"$ref": "#/$defs/origins"}, "imageOrigins": {"$ref": "#/$defs/origins"}, "authOrigins": {"$ref": "#/$defs/origins"},
         "allowSubdomains": {"type": "boolean"}, "methods": {"type": "array", "minItems": 1, "maxItems": 4, "items": {"enum": ["GET", "POST", "HEAD"]}},
         "maxConcurrentRequests": {"type": "integer", "minimum": 1, "maximum": 4}, "userAgentProfile": {"$ref": "#/$defs/userAgent"},
+        "transportProfile": {"enum": ["host.platform.v1"]},
         "cookieDefaults": {"type": "array", "maxItems": 16, "items": {"type": "object", "additionalProperties": false, "required": ["origin", "name", "value"], "properties": {"origin": {"$ref": "#/$defs/origin"}, "name": {"type": "string", "minLength": 1, "maxLength": 128}, "value": {"type": "string", "maxLength": 4096}, "path": {"type": "string", "maxLength": 1024, "pattern": "^/"}}}}
       }
     },

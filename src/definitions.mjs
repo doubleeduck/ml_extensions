@@ -1,10 +1,20 @@
 /** Signed, declarative registrations. IDs are the existing persistent app IDs. */
 const browse = ['browse','latest','search','filters'];
 const origin = host => `https://${host}`;
+const sourceBranding = Object.fromEntries([
+  ['allhentai','#E45A6B'],['desu','#176093'],['hchan','#669922'],['hentailib','#E26C7A'],
+  ['inkstory','#2979EF'],['mangalib','#32B09B'],['mangashi','#E5484D'],['mangachan','#EE6F2D'],
+  ['mangadex','#FF6740'],['shikimori','#4B7FAA'],['readmanga','#EF6A6A'],['rumix','#4FA3E6'],
+  ['seimanga','#F06D8E'],['selfmanga','#6C86F2'],['usagi','#B76CE3'],['mintmanga','#7CC173'],
+  ['yaoilib','#CF6AA8'],['senkognito','#DA5A7D'],['senkuro','#6A8AF6'],['imhentai','#ED5D96'],
+  ['pururin','#EE668F'],['anilist','#3DB4F2'],['myanimelist','#2E51A2'],['mangakakalot','#F48A46'],
+  ['weebcentral','#4EA2FF'],['mangafox','#F59B42'],['nudemoon','#D71818'],
+].map(([id,accentColor]) => [id,{icon:`assets/source_logos/${id}.${id === 'nudemoon' ? 'jpg' : 'png'}`,accentColor}]));
 function source(id,name,host,module,extra = {}) {
   const base = origin(host), {origins = [],images = [],auth = null,recommendations = false,custom = false,refresh = false,
     template = '/{id}',encoding = 'pathSegment',idPart,capabilities = browse,parameters = {},settings,metadataOnly = false,bindings = {},nsfw = false,media = {},network = {}} = extra;
   return {id,name,language:id.split('.')[0],baseUrl:base,engine:extra.engine ?? 'Handwritten JS',status:'experimental',isNsfw:nsfw,
+    branding:sourceBranding[id.split('.')[1]],
     supportsCustomBaseUrl:custom,supportsFilterRefresh:refresh,capabilities:[...capabilities,...(recommendations ? ['recommendations'] : []),...(auth ? ['account'] : [])],
     features:{webLinks:true,auth:auth != null,authCompletion:auth?.completionUrl != null,recommendations},
     web:{mangaUrlTemplate:template,idEncoding:encoding,...(idPart ? {idPart} : {})},parameters,
@@ -68,7 +78,7 @@ export const registrations = [
   source('ru.hchan','H-chan','x2.h-chan.me','engines/chan.mjs',{nsfw:true,custom:true,recommendations:true,capabilities:['latest','search','filters'],template:'/{id}',encoding:'path',images:['https://h-chan.me'],bindings:{tags:'tags'}}),
   source('ru.mangachan','MangaChan','im.manga-chan.me','engines/chan.mjs',{recommendations:true,template:'/{id}',encoding:'path',images:['https://manga-chan.me'],bindings:{tags:'genres'}}),
   source('ru.mangashi','MangaShi','manga-shi.org','sources/mangashi.mjs',{refresh:true,recommendations:true,auth:cookieAuth('manga-shi.org'),template:'/{id}',encoding:'path',images:['https://manga-shi.org'],bindings:{tags:'tags'}}),
-  source('ru.nudemoon','Nude Moon','nude-moon.org','sources/nudemoon.mjs',{nsfw:true,auth:cookieAuth('nude-moon.org','/'),template:'/{id}-manga.html'}),
+  source('ru.nudemoon','Nude Moon','nude-moon.org','sources/nudemoon.mjs',{nsfw:true,auth:cookieAuth('nude-moon.org','/'),template:'/{id}-manga.html',network:{transportProfile:'host.platform.v1'}}),
   source('ru.desu','Desu','desu.uno','sources/desu.mjs',{custom:true,refresh:true,recommendations:true,template:'/{id}',encoding:'path',images:['https://desu.uno','https://desu.me'],bindings:{tags:'genres'}}),
   metadata('ru.shikimori','Shikimori','shikimori.io','sources/shikimori.mjs',{template:'/mangas/{id}',login:'/users/sign_in',images:['https://shikimori.io','https://shikimori.one']}),
   metadata('en.anilist','AniList','anilist.co','sources/anilist.mjs',{origins:['https://graphql.anilist.co'],images:['https://anilist.co'],login:'/login'}),

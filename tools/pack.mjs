@@ -24,7 +24,13 @@ if (args.includes('--generate-key')) {
     }
   }
   await collect(path.join(root,'src')); payloads.set('LICENSE',await readFile(path.join(root,'LICENSE')));
-  payloads.set('assets/icon.png',await readFile(path.join(root,'assets/icon.png')));
+  const icons = new Set(['assets/icon.png',...registrations.map(source => source.branding?.icon).filter(Boolean)]);
+  for (const icon of icons) {
+    if (!/^assets\/(?:[A-Za-z0-9_-]+\/)*[A-Za-z0-9_.-]+\.(?:png|jpg|jpeg|webp)$/u.test(icon)) throw Error('Invalid source icon path.');
+    const bytes = await readFile(path.join(root,icon));
+    if (!bytes.length || bytes.length > 256*1024) throw Error('Source icons must be between 1 byte and 256 KiB.');
+    payloads.set(icon,bytes);
+  }
   for (const [name,bytes] of payloads) if (name.endsWith('.mjs') && /\b(?:from|import)\s*\(?\s*['"](?:node:|https?:|file:)/u.test(bytes.toString('utf8'))) throw Error('Package runtime must not import Node/network/filesystem modules.');
   const signed = signedManifest(manifestDefinition({version,publisherKeyId:keyId}),payloads,await readFile(keyFile));
   const archive = packageZip(new Map([['manifest.json',signed.bytes],['signature.ed25519',signed.signature],...payloads]));

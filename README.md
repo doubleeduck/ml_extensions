@@ -34,7 +34,11 @@ chapter per gallery, full reader page URLs and browser cookie login. Numeric
 gallery IDs remain stable across different title slugs. Search follows the
 site's Windows-1251 form encoding. The public search endpoint currently returns
 incomplete HTTP-200 pages; these raise a parse error. A fresh native HTTP session
-also received HTTP 403 while the browser could open the site. See
+initially received a Cloudflare HTTP 403 while the browser could open the site.
+Nude Moon now explicitly uses the app's `host.platform.v1` transport for HTML
+and images; a Windows live test passed catalog/details/chapters/reader and two
+media downloads without user credentials. Source icons and accent colors now
+come from signed `branding` metadata and image payloads in the extension. See
 [the source/auth verification notes](docs/NUDEMOON_AND_ALLHENTAI.md).
 
 The app bundles a generated, trusted copy of the SDK. `npm run build:host` creates
@@ -64,7 +68,7 @@ node tools/pack.mjs --generate-key .keys/local-development.pem --key-id local-de
 node tools/pack.mjs --key .keys/local-development.pem --key-id local-development --version 1.0.0-dev.1
 ```
 
-The packer collects only the handwritten runtime graph, package icon and `LICENSE`; no Dart,
+The packer collects only the handwritten runtime graph, package/source icons and `LICENSE`; no Dart,
 Node dependencies, SDK build tools, private key or tests enter the package.
 `src/definitions.mjs` is build-time metadata; `src/index.mjs` is the runtime
 dispatcher. The archive uses sorted entries, fixed ZIP timestamps, canonical

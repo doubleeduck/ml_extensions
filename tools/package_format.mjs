@@ -57,5 +57,10 @@ export function verifyPackage(archive,publicKeyBytes) {
   for (const [path,file] of Object.entries(manifest.files)) {
     const content = files.get(path); if (!content || content.length !== file.size || createHash('sha256').update(content).digest('hex') !== file.sha256) throw Error('Invalid file digest.');
   }
+  for (const source of manifest.sources) {
+    const icon = source.branding?.icon;
+    if (icon && (!/^assets\/[A-Za-z0-9_./-]+\.(?:png|jpg|jpeg|webp)$/u.test(icon) || !files.has(icon) ||
+        files.get(icon).length < 1 || files.get(icon).length > 256*1024)) throw Error('Source icon is missing or invalid.');
+  }
   if (files.size !== Object.keys(manifest.files).length+2) throw Error('Unexpected archive entry.'); return manifest;
 }

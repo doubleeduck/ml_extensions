@@ -18,11 +18,21 @@ test('official package registers 30 persistent IDs and its offline factories nev
 });
 test('official ZIP/signature payload is reproducible and rejects tampering independently', () => {
   const {privateKey} = generateKeyPairSync('ed25519'), pem = privateKey.export({type:'pkcs8',format:'pem'}), payload = new Map([['src/index.mjs',Buffer.from('export default ()=>({});')]]);
+  for (const definition of registrations) payload.set(definition.branding.icon,Buffer.from('Fixture image bytes'));
   const signed = signedManifest(manifestDefinition({version:'1.0.0',publisherKeyId:'test-generated'}),payload,pem);
   const files = new Map([['manifest.json',signed.bytes],['signature.ed25519',signed.signature],...payload]), first = packageZip(files), second = packageZip(new Map([...files].reverse()));
   assert.deepEqual(first,second); assert.equal(verifyPackage(first,signed.publicKey).sources.length,30);
   const corrupt = Buffer.from(first); corrupt[40] ^= 1; assert.throws(() => verifyPackage(corrupt,signed.publicKey));
   assert.equal(canonicalJson({z:1,a:{b:2,a:3}}),'{"a":{"a":3,"b":2},"z":1}');
+});
+
+test('every official source declares its own packaged raster branding without app assets', async () => {
+  for (const source of sourceDefinitions()) {
+    assert.match(source.branding.icon,/^assets\/source_logos\/[a-z0-9]+\.(png|jpg)$/u);
+    assert.match(source.branding.accentColor,/^#[A-F0-9]{6}$/u);
+    const bytes = await readFile(new URL(`../${source.branding.icon}`,import.meta.url));
+    assert.ok(bytes.length > 0 && bytes.length <= 256*1024);
+  }
 });
 test('published runtime graph contains no Node/native/old Dart implementation or private signing key', async () => {
   async function inspect(directory) {
