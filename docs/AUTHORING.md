@@ -1,3 +1,6 @@
+> Текущий состав: 20 обычных источников, пакет `official.mangalaunch.sources`.
+> Разделение, новые NSFW ID и переход: [SOURCE_BUNDLE_SPLIT_RU.md](SOURCE_BUNDLE_SPLIT_RU.md).
+
 # Создание JS-источника: SDK v1
 
 Этот документ описывает **реализованный** wire API. Полная интеграция менеджера
@@ -33,8 +36,8 @@ tests/…                # developer-only, в пакет не включаютс
 ```
 
 Официальный пул собирается отдельно: `src/definitions.mjs` → один manifest с
-30 sourceId; `src/index.mjs` → dispatcher фабрик. Новый официальный source требует
-обновить обе регистрации и tests. Не дробите официальный пул по сайтам.
+20 sourceId; `src/index.mjs` → dispatcher фабрик. Новый официальный source требует
+обновить обе регистрации и tests. NSFW и обычные источники выпускаются раздельными пакетами; см. SOURCE_BUNDLE_SPLIT_RU.md.
 
 Общие engines должны быть фабриками. Изменяемое состояние, cursors и кэши
 размещайте **внутри createSource(ctx)**. Module-level constants и чистые функции
@@ -110,14 +113,16 @@ DoH не используется. TLS проверяет исходный hostn
 
 `media` задаёт host UA/referer/origin. Изображения идут через нативный broker и
 общий scoped CacheManager для обложек, ридера, скачивания, OCR, сохранения и
-буфера обмена; они не пересылаются через JS IPC. Если у сайта нестандартный
-формат, нужен отдельно реализованный и разрешённый host codec profile; сейчас
-единственный дополнительный — `codecProfile:'inkstory.xor.v1'`. Произвольный JS
-decoder/callback/кодек из manifest не выполняется. Без codecProfile байты не меняются.
+буфера обмена; они не пересылаются через JS IPC. Для нестандартного формата
+`media.transform` объявляет общий алгоритм `xor`, байты `key`, `origin`,
+`pathPrefix`, `stemLength`, `markerOffset`, `marker`. Хост валидирует ограничения
+и выполняет преобразование вне UI isolate. Параметры сайта принадлежат пакету;
+произвольный JS decoder/callback из manifest не выполняется. Без transform
+байты не меняются. `presentation.coverFit` задаёт `contain`/`cover`.
 
 Cookie/Authorization/Host/User-Agent не задаются произвольным JS-заголовком.
 Host применяет собственные credentials/profile; допустимые UA — app/browser/
-senkuro/mobileSafari. Допустимые request headers указаны в network policy:
+reader/mobileSafari. Допустимые request headers указаны в network policy:
 Accept/Content-Type/Accept-Language и поддержанные публичные site/API headers.
 Referer/Origin допускаются лишь из разрешённых origins. Фиктивная Cookie в JS
 запросе не является способом обойти авторизацию.
@@ -145,6 +150,11 @@ tagName доступны по SDK type. Это data-only API, не удалён�
 
 Логин/капча/OAuth/SSO выполняются **приложением**, не JS UI. Manifest выбирает
 поддержанный host auth profile, login URL, exact cookieOrigins и sessionExport.
+Профили — `host.cookie.v1`/`host.session.v1`; `auth.rules` содержит только данные:
+`bearer`, `cookieAll`/`cookieAny`, `tokenStorageKeys`, `tokenPath`, `tokenTypePath`,
+`tokenType`, `tokenFields`. Все чтения browser storage, разбор токенов и
+распознавание сессии исполняются **в приложении**. Сайтоспецифичные callbacks
+не поддерживаются; хост проверяет границы декларации до запуска worker.
 Даже две версии одного сайта имеют отдельные cookies/tokens/browser profile.
 Cookie Domain root явно декларируется, если сервер использует parent Domain;
 само совпадение суффикса не даёт права экспортировать credentials.
@@ -164,8 +174,20 @@ Login cookies не передаются в произвольный CDN или �
 
 Настройки — manifest `settings:{version,fields}` с boolean/string/integer/enum,
 label/default/ограничениями. `ctx.settings.get/set` видят только свой sourceId и
-декларированные ключи. `network` и `libgroup` зарезервированы для host profiles;
-не расширяйте их обходными пользовательскими полями.
+декларированные ключи. `ctx.settings.get('source')` возвращает все объявленные
+поля. `network` содержит host-controlled mirror. Имена `source`/`network`
+зарезервированы. `roles.titleLanguage` указывает на enum-поле, нужное общему
+подбору трекера. Опциональный `legacyNamespace` переносит типизированные поля
+старого source-owned JSON blob без таблиц имён сайтов в приложении.
+
+В официальном пакете `network.maxConcurrentRequests` равен 6; хост принимает
+1–8. Общий scheduler допускает 32 HTTP, до 8 на origin, очередь 1024. Media
+budget — 16 всего / 8 на источник; реальная concurrency ограничена также
+manifest и общим scheduler. Эти декларации требуют обновлённого приложения.
+
+Для пары Details/Chapters используйте `src/core/recent.mjs`: ограниченный
+кеш фабрики (две записи / 15 секунд), объединение Promise, без кеширования
+HTTP ошибок и POST. Не применяйте его к ручному обновлению каталога.
 
 ## 5. Фильтры, ссылки и ошибки
 

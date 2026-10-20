@@ -7,6 +7,7 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {spawnSync} from 'node:child_process';
 import {canonicalJson, verifyPackage} from '../tools/package_format.mjs';
+import {registrations,manifestDefinition} from '../src/definitions.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const shell = process.platform === 'win32' ? 'powershell.exe' : 'pwsh';
@@ -34,7 +35,10 @@ test('build-package.ps1 produces all five public release assets, independently v
   const manifest = verifyPackage(archive, Buffer.from(publicRecord.publicKey, 'base64'));
   assert.equal(manifest.version, '1.2.3-dev.1');
   assert.equal(manifest.publisherKeyId, 'isolated-test-key');
-  assert.equal(new Set(manifest.sources.map(s => s.id)).size, 30);
+  assert.equal(new Set(manifest.sources.map(s => s.id)).size, 20);
+  assert.equal(manifest.extensionId, manifestDefinition({version:'1.0.0',publisherKeyId:'fixture'}).extensionId);
+  assert.deepEqual(manifest.sources.map(s=>s.id),registrations.map(s=>s.id));
+  assert.ok(manifest.sources.every(s=>s.isNsfw===false));
   assert.deepEqual(publicRecord.sourceIds, manifest.sources.map(s => s.id));
   assert.deepEqual(publicRecord.extensionIds, [manifest.extensionId]);
   const digest = createHash('sha256').update(archive).digest('hex');

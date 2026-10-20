@@ -90,7 +90,7 @@ export default function createSenkuro(ctx) {
   // Per-instance caches only: no shared auth/settings/cursors between variants.
   const cursors = new Map(); let filters = null;
   async function post(payload) {
-    const reply = await ctx.http.request({method:'POST',url:api,responseType:'json',body:payload,userAgentProfile:'senkuro',headers:{
+    const reply = await ctx.http.request({method:'POST',url:api,responseType:'json',body:payload,userAgentProfile:'reader',headers:{
       Accept:'application/json','Content-Type':'application/json',Origin:new URL(ctx.baseUrl).origin,Referer:`${new URL(ctx.baseUrl).origin}/`,'app-id':appId,'app-version':appVersion}});
     let root = reply.body; if (typeof root === 'string') { try { root = JSON.parse(root); } catch { throw parseError('Senkuro JSON is invalid.'); } }
     root = requireRecord(root,'Senkuro GraphQL envelope');

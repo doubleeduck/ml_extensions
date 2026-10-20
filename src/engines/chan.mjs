@@ -1,3 +1,4 @@
+import {recentRequest} from '../core/recent.mjs';
 import {chapter,filter,isoDate,manga,normalizeText,parseError,record,string} from '../core/data.mjs';
 import {requireArray,requireRecord,urlWithQuery} from '../core/http.mjs';
 import {hChanTags,mangaChanTags} from './chan-tags.mjs';
@@ -91,14 +92,15 @@ export function parsePages(body,base,hchan = false) {
   return urls.map((imageUrl,index) => ({index,imageUrl}));
 }
 export default function createChan(ctx) {
+  const titleRequest = recentRequest(input => ctx.http.request(input));
   const hchan = ctx.sourceId === 'ru.hchan';
   const base = async () => hchan ? string(record(await ctx.settings.get('network')).customBaseUrl) ?? ctx.baseUrl : ctx.baseUrl;
-  async function body(url) {
-    const origin = new URL(url).origin, response = await ctx.http.request({method:'GET',url,responseType:'text',userAgentProfile:hchan ? 'app' : 'browser',headers:{Accept:'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',Referer:`${origin}/`,...(!hchan ? {Origin:origin} : {})}});
+  async function body(url,reuse = false) {
+    const origin = new URL(url).origin, response = await (reuse ? titleRequest : input => ctx.http.request(input))({method:'GET',url,responseType:'text',userAgentProfile:hchan ? 'app' : 'browser',headers:{Accept:'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',Referer:`${origin}/`,...(!hchan ? {Origin:origin} : {})}});
     if (typeof response.body !== 'string' || !response.body.trim()) throw Object.assign(Error('Empty Chan response.'),{code:'invalid_response',phase:'http'});
     return response.body;
   }
-  const html = async (url,projection) => ctx.html.extract(await body(url),{...projection,baseUrl:url});
+  const html = async (url,projection,reuse = false) => ctx.html.extract(await body(url,reuse),{...projection,baseUrl:url});
   const browse = async (path,page,params = {}) => { const origin = await base(); return parseListing(await html(urlWithQuery(path,origin,{offset:20*(Math.max(1,page)-1),...params}),listingProjection),origin,hchan); };
   return {
     async getFilters() { return buildFilters(hchan); },
@@ -106,10 +108,10 @@ export default function createChan(ctx) {
     async getLatest({page = 1} = {}) { return browse(hchan ? '/manga/newest' : '/manga/new',page,hchan ? {} : {status:''}); },
     async search(query) { const origin = await base(); return parseListing(await html(searchUrl(origin,query,hchan),listingProjection),origin,hchan); },
     async getDetails({mangaId:id}) { const origin = await base(), normalized = normalizeId(id,origin,{hchan}); if (hchan && !normalized) throw parseError('H-chan manga id is invalid.');
-      return parseDetails(await html(new URL(normalized ?? '/',origin).href,detailsProjection),id,origin,hchan); },
+      return parseDetails(await html(new URL(normalized ?? '/',origin).href,detailsProjection,true),id,origin,hchan); },
     async getChapters({mangaId:id}) {
       const origin = await base(), normalized = normalizeId(id,origin,{hchan}); if (hchan && !normalized) return [];
-      const data = await html(new URL(normalized ?? '/',origin).href,hchan ? link('a[href*="/online/"]') : {selector:'table.table_cha tr',all:true,fields:{link:link('a[href*="/online/"]'),date:text('div.date')}});
+      const data = await html(new URL(normalized ?? '/',origin).href,hchan ? link('a[href*="/online/"]') : {selector:'table.table_cha tr',all:true,fields:{link:link('a[href*="/online/"]'),date:text('div.date')}},true);
       if (hchan) { const row = record(data), chapterId = normalizeId(row.href,origin,{hchan,chapter:true}); if (!chapterId) throw parseError('H-chan reader link is missing.'); return [chapter({id:chapterId,title:string(normalizeText(row.title)) ?? 'Читать онлайн',number:1})]; }
       const seen = new Set(); return requireArray(data,'MangaChan chapters').flatMap(row => {
         const anchor = record(row.link), chapterId = normalizeId(anchor.href,origin), title = string(normalizeText(anchor.text));

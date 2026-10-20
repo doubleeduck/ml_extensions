@@ -1,4 +1,5 @@
 import {manga, normalizeText, parseError, record, records} from '../core/data.mjs';
+import {recent} from '../core/recent.mjs';
 import {isValidChapterId, parseCatalog, parseChapters, parseFilters, parseManga, parsePages} from './inkstory_parser.mjs';
 
 // One factory invocation per source context; never shared with another source.
@@ -17,7 +18,7 @@ export default function createInkStory(ctx) {
   }
   async function json(path, query) {
     const response = await ctx.http.request({method:'GET', url:apiUrl(path, query), responseType:'json',
-      userAgentProfile:'senkuro', headers:{Accept:'application/json, text/plain, */*', 'X-Service-Name':'inkstory'}});
+      userAgentProfile:'reader', headers:{Accept:'application/json, text/plain, */*', 'X-Service-Name':'inkstory'}});
     return response.body;
   }
   function mangaPath(id) {
@@ -26,6 +27,7 @@ export default function createInkStory(ctx) {
     if (!/^\/content\/[^/]+$/u.test(path)) throw parseError('InkStory manga id is invalid.');
     return path;
   }
+  const book = recent(path => json(`books/${path.split('/').at(-1)}`));
   async function catalog({page = 1, sort = 'viewsCount,desc', search = '', filters = {}} = {}) {
     await base();
     const order = filters.sort ?? [];
@@ -67,11 +69,11 @@ export default function createInkStory(ctx) {
     async getDetails({mangaId}) {
       await base();
       const path = mangaPath(mangaId);
-      return parseManga(record(await json(`books/${path.split('/').at(-1)}`)));
+      return parseManga(record(await book(path)));
     },
     async getChapters({mangaId}) {
       const path = mangaPath(mangaId);
-      const details = record(await json(`books/${path.split('/').at(-1)}`));
+      const details = record(await book(path));
       if (typeof details.id !== 'string') throw parseError('InkStory book id is missing.');
       return parseChapters(await json('chapters', {bookId:details.id, moderationStatus:'APPROVED'}), path);
     },

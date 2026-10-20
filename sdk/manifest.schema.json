@@ -28,7 +28,7 @@
     "https": {"type": "string", "format": "uri", "maxLength": 2048, "pattern": "^https://[^@#]+$"},
     "origin": {"type": "string", "format": "uri", "maxLength": 2048, "pattern": "^https://[^/?#@]+$"},
     "origins": {"type": "array", "maxItems": 128, "items": {"$ref": "#/$defs/origin"}},
-    "userAgent": {"enum": ["app", "browser", "senkuro", "mobileSafari"]},
+    "userAgent": {"enum": ["app", "browser", "reader", "mobileSafari"]},
     "source": {
       "type": "object", "additionalProperties": false,
       "required": ["id", "name", "language", "baseUrl", "engine", "status", "capabilities", "features", "network", "media"],
@@ -43,6 +43,7 @@
         "parameters": {"type": "object", "maxProperties": 32, "additionalProperties": {"type": "string", "minLength": 1, "maxLength": 1024}},
         "filterBindings": {"type": "object", "additionalProperties": false, "properties": {"author": {"type": "string", "minLength": 1, "maxLength": 128}, "artist": {"type": "string", "minLength": 1, "maxLength": 128}, "tags": {"type": "string", "minLength": 1, "maxLength": 128}}},
         "web": {"type": "object", "additionalProperties": false, "required": ["mangaUrlTemplate", "idEncoding"], "properties": {"mangaUrlTemplate": {"type": "string", "minLength": 1, "maxLength": 1024, "pattern": "^/(?!/).*\\{id\\}"}, "idEncoding": {"enum": ["pathSegment", "path"]}, "idPart": {"type": "object", "additionalProperties": false, "required": ["separator", "index"], "properties": {"separator": {"type": "string", "minLength": 1, "maxLength": 8}, "index": {"type": "integer", "minimum": 0, "maximum": 8}}}}},
+        "presentation": {"type":"object","additionalProperties":false,"required":["coverFit"],"properties":{"coverFit":{"enum":["contain","cover"]}}},
         "branding": {"type": "object", "additionalProperties": false, "properties": {"icon": {"type": "string", "maxLength": 240, "pattern": "^assets/[A-Za-z0-9_./-]+\\.(png|jpg|jpeg|webp)$"}, "accentColor": {"type": "string", "pattern": "^#[0-9A-Fa-f]{6}$"}}},
         "network": {"$ref": "#/$defs/network"}, "media": {"$ref": "#/$defs/media"},
         "auth": {"$ref": "#/$defs/auth"}, "settings": {"$ref": "#/$defs/settings"}
@@ -54,23 +55,23 @@
       "properties": {
         "origins": {"$ref": "#/$defs/origins"}, "imageOrigins": {"$ref": "#/$defs/origins"}, "authOrigins": {"$ref": "#/$defs/origins"},
         "allowSubdomains": {"type": "boolean"}, "methods": {"type": "array", "minItems": 1, "maxItems": 4, "items": {"enum": ["GET", "POST", "HEAD"]}},
-        "maxConcurrentRequests": {"type": "integer", "minimum": 1, "maximum": 4}, "userAgentProfile": {"$ref": "#/$defs/userAgent"},
+        "maxConcurrentRequests": {"type": "integer", "minimum": 1, "maximum": 8}, "userAgentProfile": {"$ref": "#/$defs/userAgent"},
         "transportProfile": {"enum": ["host.platform.v1"]},
         "cookieDefaults": {"type": "array", "maxItems": 16, "items": {"type": "object", "additionalProperties": false, "required": ["origin", "name", "value"], "properties": {"origin": {"$ref": "#/$defs/origin"}, "name": {"type": "string", "minLength": 1, "maxLength": 128}, "value": {"type": "string", "maxLength": 4096}, "path": {"type": "string", "maxLength": 1024, "pattern": "^/"}}}}
       }
     },
-    "media": {"type": "object", "additionalProperties": false, "required": ["userAgentProfile", "refererOrigin", "sendOrigin"], "properties": {"userAgentProfile": {"$ref": "#/$defs/userAgent"}, "refererOrigin": {"$ref": "#/$defs/origin"}, "sendOrigin": {"type": "boolean"}, "codecProfile": {"enum": ["inkstory.xor.v1"]}}},
+    "media": {"type": "object", "additionalProperties": false, "required": ["userAgentProfile", "refererOrigin", "sendOrigin"], "properties": {"userAgentProfile": {"$ref": "#/$defs/userAgent"}, "refererOrigin": {"$ref": "#/$defs/origin"}, "sendOrigin": {"type": "boolean"}, "transform": {"type":"object","additionalProperties":false,"required":["algorithm","key","origin","pathPrefix","stemLength","markerOffset","marker"],"properties":{"algorithm":{"const":"xor"},"key":{"type":"array","minItems":1,"maxItems":256,"items":{"type":"integer","minimum":0,"maximum":255}},"origin":{"$ref":"#/$defs/origin"},"pathPrefix":{"type":"string","maxLength":256,"pattern":"^/"},"stemLength":{"type":"integer","minimum":1,"maximum":256},"markerOffset":{"type":"integer","minimum":0,"maximum":255},"marker":{"type":"string","minLength":1,"maxLength":1}}}}},
     "auth": {
       "type": "object", "additionalProperties": false, "required": ["profileId", "loginUrl", "cookieOrigins", "sessionExport"],
       "properties": {
-        "profileId": {"enum": ["host.cookie.v1", "host.libgroup.v1", "host.grouple.v1", "host.senkuro.v1"]}, "loginUrl": {"$ref": "#/$defs/https"},
+        "profileId": {"enum": ["host.cookie.v1", "host.session.v1"]}, "rules": {"type":"object","additionalProperties":false,"properties":{"bearer":{"type":"boolean"},"cookieAll":{"type":"array","maxItems":16,"items":{"type":"string","minLength":1,"maxLength":128}},"cookieAny":{"type":"array","maxItems":16,"items":{"type":"string","minLength":1,"maxLength":128}},"tokenStorageKeys":{"type":"array","maxItems":16,"items":{"type":"string","minLength":1,"maxLength":128}},"tokenFields":{"type":"array","maxItems":16,"items":{"type":"string","minLength":1,"maxLength":128}},"tokenPath":{"type":"array","maxItems":16,"items":{"type":"string","minLength":1,"maxLength":128}},"tokenTypePath":{"type":"array","maxItems":16,"items":{"type":"string","minLength":1,"maxLength":128}},"tokenType":{"type":"string","minLength":1,"maxLength":32}}}, "loginUrl": {"$ref": "#/$defs/https"},
         "cookieOrigins": {"type": "array", "maxItems": 16, "items": {"$ref": "#/$defs/origin"}}, "completionUrl": {"$ref": "#/$defs/https"}, "successUrl": {"$ref": "#/$defs/https"},
         "sessionExport": {"type": "object", "additionalProperties": false, "required": ["headers", "values"], "properties": {"headers": {"type": "array", "maxItems": 8, "items": {"enum": ["Cookie", "Authorization", "X-XSRF-TOKEN", "X-CSRF-TOKEN"]}}, "values": {"type": "array", "maxItems": 2, "items": {"enum": ["accessToken", "csrfToken"]}}}}
       }
     },
-    "settings": {"type": "object", "additionalProperties": false, "required": ["version"], "properties": {"version": {"type": "integer", "minimum": 1, "maximum": 1000}, "profileId": {"enum": ["host.libgroup.v1", "host.grouple.v1"]}, "fields": {"type": "array", "maxItems": 32, "items": {"$ref": "#/$defs/setting"}}}},
+    "settings": {"type":"object","additionalProperties":false,"required":["version"],"properties":{"version":{"type":"integer","minimum":1,"maximum":1000},"fields":{"type":"array","maxItems":32,"items":{"$ref":"#/$defs/setting"}},"roles":{"type":"object","additionalProperties":false,"properties":{"titleLanguage":{"type":"string","minLength":1,"maxLength":64}}},"legacyNamespace":{"type":"string","pattern":"^[a-z][a-z0-9_-]{0,31}$"}}},
     "setting": {"type": "object", "additionalProperties": false, "required": ["key", "label", "type", "default"], "properties": {
-      "key": {"type": "string", "pattern": "^[a-z][A-Za-z0-9_.-]{0,63}$", "not": {"enum": ["libgroup", "network"]}}, "label": {"type": "string", "minLength": 1, "maxLength": 128},
+      "key": {"type": "string", "pattern": "^[a-z][A-Za-z0-9_.-]{0,63}$", "not": {"enum": ["source", "network"]}}, "label": {"type": "string", "minLength": 1, "maxLength": 128},
       "type": {"enum": ["boolean", "string", "integer", "enum"]}, "default": {},
       "min": {"type": "integer", "minimum": -1000000, "maximum": 1000000}, "max": {"type": "integer", "minimum": -1000000, "maximum": 1000000}, "maxLength": {"type": "integer", "minimum": 1, "maximum": 4096},
       "options": {"type": "array", "minItems": 1, "maxItems": 64, "items": {"type": "object", "additionalProperties": false, "required": ["value", "label"], "properties": {"value": {"type": "string", "minLength": 1, "maxLength": 256}, "label": {"type": "string", "minLength": 1, "maxLength": 128}}}}

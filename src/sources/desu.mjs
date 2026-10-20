@@ -1,3 +1,4 @@
+import {recentRequest} from '../core/recent.mjs';
 import {chapter,filter,manga,normalizeText,parseError,record,string} from '../core/data.mjs';
 import {finiteNumber,requireArray,requireRecord,urlWithQuery} from '../core/http.mjs';
 const text = selector => ({selector,text:true});
@@ -90,17 +91,18 @@ const recommendationsProjection = {selector:'#cutted_covers_4 article.c-anime',a
   fallback:{selector:'a[href*="manga/"]',fields:{href:{attr:'href'},title:{attr:'title'},text:{text:true}}},image:{selector:'img',fields:{src:{attr:'src'},alt:{attr:'alt'}}}}};
 const compatibleFailure = error => ['network','offline','timeout','not_found','parse_error','invalid_response'].includes(error.code);
 export default function createDesu(ctx) {
+  const titleRequest = recentRequest(input => ctx.http.request(input));
   let cachedBase = null, cachedFilters = null;
   async function base() { const value = string(record(await ctx.settings.get('network')).customBaseUrl) ?? ctx.baseUrl; if (value !== cachedBase) { cachedBase = value; cachedFilters = null; } return value; }
-  async function request(url,{form,json = false,referer} = {}) {
-    const response = await ctx.http.request({method:form ? 'POST' : 'GET',url,responseType:'text',...(form ? {body:new URLSearchParams(form).toString()} : {}),headers:{
+  async function request(url,{form,json = false,referer,reuse = false} = {}) {
+    const response = await (reuse ? titleRequest : input => ctx.http.request(input))({method:form ? 'POST' : 'GET',url,responseType:'text',...(form ? {body:new URLSearchParams(form).toString()} : {}),headers:{
       Accept:form ? 'application/json, text/javascript, */*; q=0.01' : json ? 'application/json, text/plain, */*' : 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
       Referer:referer ?? new URL(url).origin,...(form ? {'Content-Type':'application/x-www-form-urlencoded','X-Requested-With':'XMLHttpRequest'} : {})}});
     if (typeof response.body !== 'string' || !response.body.trim()) throw Object.assign(Error('Empty Desu response.'),{code:'invalid_response',phase:'http'});
     if (json || form) { try { return requireRecord(JSON.parse(response.body),'Desu payload'); } catch { throw parseError('Desu JSON is malformed.'); } }
     return response.body;
   }
-  const html = async (url,projection) => ctx.html.extract(await request(url),{...projection,baseUrl:url});
+  const html = async (url,projection,reuse = false) => ctx.html.extract(await request(url,{reuse}),{...projection,baseUrl:url});
   const listing = async (query,sort) => { const origin = await base(); return parseCatalog(await html(catalogUrl(origin,query,sort),catalogProjection),origin); };
   const numericId = id => normalizeId(id)?.match(/\.(\d+)\/?$/u)?.[1];
   return {
@@ -114,11 +116,11 @@ export default function createDesu(ctx) {
       if (typeof payload.templateHtml !== 'string') throw parseError('Desu search template is missing.');
       return parseCatalog(await ctx.html.extract(payload.templateHtml,{...quickProjection,baseUrl:origin}),origin,{quick:true});
     },
-    async getDetails({mangaId:id}) { const origin = await base(), path = normalizeId(id,{base:origin}); if (!path) throw parseError('Desu manga id is invalid.'); return parseDetails(await html(new URL(path,origin).href,detailsProjection),path,origin); },
+    async getDetails({mangaId:id}) { const origin = await base(), path = normalizeId(id,{base:origin}); if (!path) throw parseError('Desu manga id is invalid.'); return parseDetails(await html(new URL(path,origin).href,detailsProjection,true),path,origin); },
     async getChapters({mangaId:id}) {
       const origin = await base(), path = normalizeId(id,{base:origin}); if (!path) throw parseError('Desu manga id is invalid.');
       const numeric = numericId(path); if (numeric) try { const chapters = parseApiChapters(await request(new URL(`/api/manga/${numeric}/chapters`,origin).href,{json:true})); if (chapters.length) return chapters; } catch (error) { if (!compatibleFailure(error)) throw error; }
-      const rows = requireArray(await html(new URL(path,origin).href,legacyChaptersProjection),'Desu HTML chapters'), seen = new Set();
+      const rows = requireArray(await html(new URL(path,origin).href,legacyChaptersProjection,true),'Desu HTML chapters'), seen = new Set();
       return rows.flatMap(row => {
         const link = record(row.link), id = normalizeId(link.href,{base:origin,chapter:true}), number = id?.match(/\/ch(-?\d+(?:[.,]\d+)?)/iu)?.[1];
         if (!id || number == null || seen.has(id)) return []; seen.add(id);

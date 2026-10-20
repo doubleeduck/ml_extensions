@@ -10,6 +10,15 @@ function context(responder) {
     html:{async extract(){throw new Error('Unexpected HTML request');}},
   };
 }
+
+test('paired details and chapters reuse the book lookup without repeating its JSON request', async () => {
+  const ctx=context(url=>url.pathname==='/v2/books/demo' ? {id:'book-id',slug:'demo',name:{ru:'Демо'}} :
+    [{id:'ch-1',number:1,branchId:'main'}]);
+  const source=createSource(ctx);
+  assert.equal((await source.getDetails({mangaId:'/content/demo'})).title,'Демо');
+  assert.equal((await source.getChapters({mangaId:'/content/demo'})).length,1);
+  assert.equal(ctx.requests.filter(request=>new URL(request.url).pathname==='/v2/books/demo').length,1);
+});
 test('chapter requests preserve endpoints and only return largest translation', async () => {
   const ctx = context(url => url.pathname === '/v2/books/demo' ? {id:'book-id'} : [
     {id:'a1',number:1,branchId:'a'},{id:'b1',number:1,branchId:'b'},{id:'b2',number:2,branchId:'b'}]);

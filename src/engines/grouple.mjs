@@ -1,3 +1,4 @@
+import {recent} from '../core/recent.mjs';
 import {chapter,manga,normalizeText,parseError,record,string} from '../core/data.mjs';
 import {finiteNumber,requireArray,requireRecord,urlWithQuery} from '../core/http.mjs';
 import {fallbackSort,filterProjection,parseFilters,searchParameters} from './grouple-filters.mjs';
@@ -72,9 +73,11 @@ const recommendationsProjection = {selector:'.ui-section',all:true,fields:{like:
 const readerInfoProjection = {fields:{avatar:{selector:'.user-avatar',text:true},title:{selector:'title',text:true},content:{selector:'body',text:true},
   hero:{selector:'.cr-hero-names__main',text:true}}};
 export default function createGrouple(ctx) {
+  const titleResponse = recent(url => response(url));
   const requiresAuthorization = ['ru.allhentai','ru.rumix','ru.mintmanga'].includes(ctx.sourceId), accepts404 = ctx.sourceId === 'ru.allhentai';
   const base = async () => string(record(await ctx.settings.get('network')).customBaseUrl) ?? ctx.baseUrl;
-  async function response(url,{json = false,tags = false} = {}) {
+  async function response(url,{json = false,tags = false,reuse = false} = {}) {
+    if (reuse && !json && !tags) return titleResponse(url);
     const origin = new URL(url).origin;
     try {
       const reply = await ctx.http.request({method:'GET',url,responseType:'text',userAgentProfile:'browser',headers:{
@@ -90,7 +93,7 @@ export default function createGrouple(ctx) {
       return error.body;
     }
   }
-  const html = async (url,projection) => ctx.html.extract(await response(url),{...projection,baseUrl:url});
+  const html = async (url,projection,reuse = false) => ctx.html.extract(await response(url,{reuse}),{...projection,baseUrl:url});
   const catalog = async query => { const origin = await base(); return parseCatalog(await response(urlWithQuery('/api/catalog/search',origin,query),{json:true}),origin); };
   return {
     async getFilters() {
@@ -113,16 +116,16 @@ export default function createGrouple(ctx) {
       return catalog(searchParameters(query));
     },
     async getDetails({mangaId:id}) {
-      const origin = await base(), settings = record(await ctx.settings.get('libgroup'));
-      return parseDetails(await html(new URL(id.startsWith('/') ? id : `/${id}`,origin).href,detailsProjection),id,origin,settings);
+      const origin = await base(), settings = record(await ctx.settings.get('source'));
+      return parseDetails(await html(new URL(id.startsWith('/') ? id : `/${id}`,origin).href,detailsProjection,true),id,origin,settings);
     },
-    async getChapters({mangaId:id}) { const origin = await base(); return parseChapters(await html(new URL(id.startsWith('/') ? id : `/${id}`,origin).href,chaptersProjection),origin,
+    async getChapters({mangaId:id}) { const origin = await base(); return parseChapters(await html(new URL(id.startsWith('/') ? id : `/${id}`,origin).href,chaptersProjection,true),origin,
       {readManga:ctx.sourceId === 'ru.readmanga',requiresAuthorization}); },
     async getPages({mangaId:id,chapterId}) {
       const origin = await base(), url = new URL(chapterId,origin); url.search = ''; url.hash = '';
       let body;
       try {
-        const details = await response(new URL(id.startsWith('/') ? id : `/${id}`,origin).href);
+        const details = await response(new URL(id.startsWith('/') ? id : `/${id}`,origin).href,{reuse:true});
         const hash = details.match(/user_hash[^"'`]*['"`]([^'"`]+)['"`]/iu)?.[1]?.trim();
         url.search = hash ? `d=${hash}&mtr=true` : 'mtr=true'; body = await response(url.href);
       } catch (error) {

@@ -1,3 +1,4 @@
+import {recentRequest} from '../core/recent.mjs';
 import {chapter,filter,manga,normalizeText,parseError,record,string} from '../core/data.mjs';
 import {requireArray,requireRecord,urlWithQuery} from '../core/http.mjs';
 const base = 'https://manga-shi.org';
@@ -60,9 +61,10 @@ export function parseDetails(input,id) {
 }
 const chaptersProjection = {fields:{items:{selector:'a[href*="/glava"]',all:true,fields:{href:{attr:'href'},title:text('.chapter-title'),text:{text:true}}},next:{selector:'#chapters-load-more [hx-get], #chapters-load-more[hx-get]',attr:'hx-get'}}};
 export default function createMangaShi(ctx) {
+  const titleRequest = recentRequest(input => ctx.http.request(input));
   let cachedTags = null, cachedYears = null;
-  async function html(url,projection,{htmx = false} = {}) {
-    const response = await ctx.http.request({method:'GET',url,responseType:'text',headers:{Accept:'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',Referer:`${base}/`,...(htmx ? {'HX-Request':'true'} : {})}});
+  async function html(url,projection,{htmx = false,reuse = false} = {}) {
+    const response = await (reuse ? titleRequest : input => ctx.http.request(input))({method:'GET',url,responseType:'text',headers:{Accept:'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',Referer:`${base}/`,...(htmx ? {'HX-Request':'true'} : {})}});
     if (typeof response.body !== 'string' || !response.body.trim()) throw Object.assign(Error('MangaShi response is empty.'),{code:'invalid_response',phase:'http'});
     return ctx.html.extract(response.body,{...projection,baseUrl:response.url ?? url});
   }
@@ -75,12 +77,12 @@ export default function createMangaShi(ctx) {
     async getPopular({page = 1} = {}) { return listing(urlWithQuery('/catalog/',base,{sort:'popular',page:Math.max(1,page)})); },
     async getLatest({page = 1} = {}) { return listing(urlWithQuery('/catalog/',base,{sort:'updated',page:Math.max(1,page)})); },
     async search(query) { return listing(searchUrl(query)); },
-    async getDetails({mangaId:id}) { const path = normalizeId(id); if (!path) throw parseError('MangaShi manga id is invalid.'); return parseDetails(await html(new URL(path,base).href,detailsProjection),id); },
+    async getDetails({mangaId:id}) { const path = normalizeId(id); if (!path) throw parseError('MangaShi manga id is invalid.'); return parseDetails(await html(new URL(path,base).href,detailsProjection,{reuse:true}),id); },
     async getChapters({mangaId:id}) {
       const path = normalizeId(id); if (!path) throw parseError('MangaShi manga id is invalid.');
       const result = [], seen = new Set(), visited = new Set(); let url = new URL(path,base).href, htmx = false;
       for (let count = 0; count < 100; count++) {
-        const data = requireRecord(await html(url,chaptersProjection,{htmx}),'MangaShi chapters');
+        const data = requireRecord(await html(url,chaptersProjection,{htmx,reuse:!htmx}),'MangaShi chapters');
         for (const row of requireArray(data.items,'MangaShi chapter links')) {
           const id = normalizeId(row.href,true), title = string(normalizeText(row.title)); if (!id || !title || seen.has(id)) continue; seen.add(id);
           const match = id.match(/\/glava[-_](\d+(?:[.,]\d+)?)/iu) ?? title.match(/(?:глава|гл\.?|chapter)\s*(\d+(?:[.,]\d+)?)/iu), date = row.text?.match(/\b(\d{1,2})[./](\d{1,2})[./](\d{4})\b/u);

@@ -17,7 +17,7 @@ export default function createLibGroup(ctx) {
   const trimDomain = domain => domain.trim().replace(/\/+$/u,'');
   async function settings() {
     return {imageServer:'compress',titleLanguage:'eng',chapterMode:'ms_mixing',showAlternativeBranchSource:false,
-      apiDomain:'https://api2.mangalib.me',...record(await ctx.settings.get('libgroup'))};
+      apiDomain:'https://api2.mangalib.me',...record(await ctx.settings.get('source'))};
   }
   const headers = () => ({Accept:'application/json, text/plain, */*',Origin:origin,Referer:`${origin}/`,'Site-Id':String(siteId)});
   async function json(path, query, config, allowNotFound = false) {

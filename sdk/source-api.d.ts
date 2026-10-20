@@ -52,7 +52,7 @@ export interface HttpRequestDto {
    * native media path, not large byte arrays through JavaScript. */
   method:'GET'|'POST'|'HEAD'; url:string; responseType:'text'|'json'|'bytes';
   headers?:Record<string,string>; body?:Json; authRevision?:number; timeoutMs?:number;
-  userAgentProfile?:'app'|'browser'|'senkuro'|'mobileSafari';
+  userAgentProfile?:'app'|'browser'|'reader'|'mobileSafari';
 }
 export interface HttpResponseDto {status:number;url:string;headers:Readonly<Record<string,string>>;body:Json;}
 export interface HtmlProjectionDto {

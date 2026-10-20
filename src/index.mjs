@@ -3,8 +3,6 @@ import createMangaDex from './engines/mangadex.mjs';
 import createLibGroup from './engines/libgroup.mjs';
 import createGrouple from './engines/grouple.mjs';
 import createSenkuro from './engines/senkuro.mjs';
-import createIMHentai from './sources/imhentai.mjs';
-import createPururin from './sources/pururin.mjs';
 import createMangaFox from './sources/mangafox.mjs';
 import createMangaKakalot from './sources/mangakakalot.mjs';
 import createWeebCentral from './sources/weebcentral.mjs';
@@ -14,17 +12,28 @@ import createDesu from './sources/desu.mjs';
 import createShikimori from './sources/shikimori.mjs';
 import createAniList from './sources/anilist.mjs';
 import createMyAnimeList from './sources/myanimelist.mjs';
-import createNudeMoon from './sources/nudemoon.mjs';
 
 const factories = new Map([
-  ['ru.inkstory',createInkStory],...['ru.mangadex','en.mangadex'].map(id => [id,createMangaDex]),
-  ...['ru.mangalib','ru.hentailib','ru.yaoilib'].map(id => [id,createLibGroup]),
-  ...['ru.readmanga','ru.mintmanga','ru.seimanga','ru.selfmanga','ru.usagi','ru.rumix','ru.allhentai'].map(id => [id,createGrouple]),
-  ...['ru.senkuro','ru.senkognito'].map(id => [id,createSenkuro]),...['all.imhentai','en.imhentai','ru.imhentai'].map(id => [id,createIMHentai]),
-  ['all.pururin',createPururin],['en.mangafox',createMangaFox],['en.mangakakalot',createMangaKakalot],['en.weebcentral',createWeebCentral],
-  ['ru.hchan',createChan],['ru.mangachan',createChan],['ru.mangashi',createMangaShi],['ru.desu',createDesu],
-  ['ru.shikimori',createShikimori],['en.anilist',createAniList],['en.myanimelist',createMyAnimeList],
-  ['ru.nudemoon',createNudeMoon],
+  ['ru.inkstory',createInkStory],
+  ['ru.mangadex',createMangaDex],
+  ['en.mangadex',createMangaDex],
+  ['ru.mangalib',createLibGroup],
+  ['ru.readmanga',createGrouple],
+  ['ru.mintmanga',createGrouple],
+  ['ru.seimanga',createGrouple],
+  ['ru.selfmanga',createGrouple],
+  ['ru.usagi',createGrouple],
+  ['ru.rumix',createGrouple],
+  ['ru.senkuro',createSenkuro],
+  ['en.mangafox',createMangaFox],
+  ['en.mangakakalot',createMangaKakalot],
+  ['en.weebcentral',createWeebCentral],
+  ['ru.mangachan',createChan],
+  ['ru.mangashi',createMangaShi],
+  ['ru.desu',createDesu],
+  ['ru.shikimori',createShikimori],
+  ['en.anilist',createAniList],
+  ['en.myanimelist',createMyAnimeList],
 ]);
 export default function createSource(context) {
   const factory = factories.get(context.sourceId);
