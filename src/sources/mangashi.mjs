@@ -34,6 +34,8 @@ export function searchUrl({searchTerm = '',page = 1,selectedFilters = {}} = {}) 
 const cardFields = {href:{attr:'href'},title:text('h3, h4, .title'),image:{selector:'img',fields:{title:{attr:'title'},src:{attr:'src'},lazy:{attr:'data-src'}}},
   type:text('div.flex.justify-between.items-center > span'),badges:{selector:'span, div',all:true,text:true}};
 const listingProjection = {fields:{items:{selector:'#manga-grid > a[href*="/manga/"]',all:true,fields:cardFields},options:optionsProjection}};
+// Once options are known, HTMX returns just these cards, without the filter form.
+const fragmentListingProjection = {fields:{items:{selector:'#manga-grid > a[href*="/manga/"], body > a[href^="/manga/"]',all:true,fields:cardFields}}};
 const resolve = value => string(value) && !value.trim().startsWith('data:image/') ? new URL(value.trim(),base).href : null;
 export function parseListing(input,exclude = null) {
   const result = [], seen = new Set();
@@ -44,14 +46,13 @@ export function parseListing(input,exclude = null) {
   }
   return result;
 }
-const detailsProjection = {fields:{title:text('h1'),hero:{selector:'h1',ascend:1,fields:{badges:{selector:'span.tracking-widest',all:true,text:true},description:text('.leading-relaxed')}},
+const detailsProjection = {fields:{title:text('h1'),hero:{selector:'h1',ascend:1,fields:{badges:{selector:'span.tracking-widest',all:true,text:true},description:text('[x-ref=descDesktop], .leading-relaxed')}},
   cover:{selector:'meta[property="og:image"]',attr:'content'},adult:{selector:'[data-adult-warning=true]',text:true},tags:{selector:'a[href^="/manga-genre/"], a[href*="/catalog/?tag="]',all:true,text:true},
-  metadata:{selector:'div',all:true,fields:{children:{selector:'*',all:true,directChildren:true,fields:{tag:{tagName:true},text:{text:true}}}}}}};
+  metadata:{selector:'div.flex > span.tracking-widest',all:true,fields:{label:{text:true},value:{nextSibling:true,text:true}}}}};
 export function parseDetails(input,id) {
   const data = requireRecord(input,'MangaShi details'), title = string(normalizeText(data.title)); if (!title) throw parseError('MangaShi title is missing.');
   const info = label => { for (const row of data.metadata) {
-    const children = row.children; if (children.length < 2 || children[0].tag !== 'span') continue;
-    if (normalizeText(children[0].text).replaceAll(':','').toLowerCase() === label.toLowerCase()) return string(normalizeText(children.slice(1).map(row => row.text).join(', ')));
+    if (normalizeText(row.label).replaceAll(':','').toLowerCase() === label.toLowerCase()) return string(normalizeText(row.value));
   } return null; };
   const badges = record(data.hero).badges ?? [], status = normalizeText(badges[1]).replace('•','').trim(), lower = status.toLowerCase(), seen = new Set();
   return manga({id:normalizeId(id),title,coverUrl:resolve(data.cover),description:string(normalizeText(record(data.hero).description)),secondaryTitle:info('Другие названия')?.replace(/\s*\/\s*/gu,', ') ?? null,
@@ -59,21 +60,45 @@ export function parseDetails(input,id) {
     status:lower.includes('онгоинг') ? 'ongoing' : lower.includes('заверш') ? 'completed' : lower.includes('хиатус') ? 'hiatus' : string(status),
     tags:data.tags.map(value => normalizeText(value).replace('#','')).filter(value => { const key = value.toLowerCase(); if (!value || seen.has(key)) return false; seen.add(key); return true; })});
 }
-const chaptersProjection = {fields:{items:{selector:'a[href*="/glava"]',all:true,fields:{href:{attr:'href'},title:text('.chapter-title'),text:{text:true}}},next:{selector:'#chapters-load-more [hx-get], #chapters-load-more[hx-get]',attr:'hx-get'}}};
+const chaptersProjection = {fields:{items:{selector:'a[href*="/glava"] .chapter-title',ascend:1,all:true,fields:{href:{attr:'href'},title:text('.chapter-title'),text:{text:true}}},next:{selector:'#chapters-load-more [hx-get], #chapters-load-more[hx-get]',attr:'hx-get'}}};
 const relatedProjection = {selector:'[data-rec-block]',fields:{items:{selector:'a[href*="/manga/"]',all:true,fields:{...cardFields,title:text('h3, h4')}}}};
 export default function createMangaShi(ctx) {
-  let cachedTags = null, cachedYears = null;
+  let cachedOptions = null;
   async function html(url,projection,{htmx = false} = {}) {
     const response = await ctx.http.request({method:'GET',url,responseType:'text',headers:{Accept:'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',Referer:`${base}/`,...(htmx ? {'HX-Request':'true'} : {})}});
     if (typeof response.body !== 'string' || !response.body.trim()) throw Object.assign(Error('MangaShi response is empty.'),{code:'invalid_response',phase:'http'});
     return ctx.html.extract(response.body,{...projection,baseUrl:response.url ?? url});
   }
   const titlePage = recent(url => html(url,{fields:{details:detailsProjection,chapters:chaptersProjection,related:relatedProjection}}));
-  async function listing(url) { const page = await html(url,listingProjection), options = parseOptions(page.options); if (cachedTags == null && options.tags.length) cachedTags = options.tags; if (cachedYears == null && options.years.length) cachedYears = options.years; return parseListing(page.items); }
+  async function listing(url) {
+    if (cachedOptions == null) {
+      const page = await html(url,listingProjection);
+      cachedOptions = parseOptions(page.options);
+      return parseListing(page.items);
+    }
+    return parseListing((await html(url,fragmentListingProjection,{htmx:true})).items);
+  }
+  const chapterList = recent(async firstUrl => {
+    const result = [], seen = new Set(), visited = new Set([firstUrl]); let url=firstUrl;
+    for (let count=0;count<100;count++) {
+      const data = requireRecord(count === 0 ? (await titlePage(url)).chapters : await html(url,chaptersProjection,{htmx:true}),'MangaShi chapters');
+      for (const row of requireArray(data.items,'MangaShi chapter links')) {
+        const id = normalizeId(row.href,true), title = string(normalizeText(row.title));
+        if (!id || !title || seen.has(id)) continue; seen.add(id);
+        const match = id.match(/\/glava[-_](\d+(?:[.,]\d+)?)/iu) ?? title.match(/(?:глава|гл\.?|chapter)\s*(\d+(?:[.,]\d+)?)/iu), date = row.text?.match(/\b(\d{1,2})[./](\d{1,2})[./](\d{4})\b/u);
+        result.push(chapter({id,title,number:match ? Number(match[1].replace(',','.')) : -1,uploadedAt:date ? new Date(Date.UTC(Number(date[3]),Number(date[2])-1,Number(date[1]))).toISOString() : null}));
+      }
+      if (!string(data.next)) return result;
+      const next = new URL(data.next,url).href;
+      if (visited.has(next)) throw parseError('MangaShi chapter pagination did not advance.');
+      visited.add(next); url=next;
+    }
+    throw Object.assign(Error('MangaShi chapter pagination work limit.'),{code:'resource_limit',phase:'pagination'});
+  });
   return {
     async getFilters({refresh = false} = {}) {
-      if (cachedTags == null || cachedYears == null || refresh) { const options = parseOptions(await html(`${base}/catalog/`,optionsProjection)); cachedTags = options.tags; cachedYears = options.years; }
-      return buildFilters({tags:cachedTags,years:cachedYears});
+      if (cachedOptions == null || refresh) cachedOptions = parseOptions(await html(`${base}/catalog/`,optionsProjection));
+      return buildFilters(cachedOptions);
     },
     async getPopular({page = 1} = {}) { return listing(urlWithQuery('/catalog/',base,{sort:'popular',page:Math.max(1,page)})); },
     async getLatest({page = 1} = {}) { return listing(urlWithQuery('/catalog/',base,{sort:'updated',page:Math.max(1,page)})); },
@@ -81,17 +106,7 @@ export default function createMangaShi(ctx) {
     async getDetails({mangaId:id}) { const path = normalizeId(id); if (!path) throw parseError('MangaShi manga id is invalid.'); return parseDetails((await titlePage(new URL(path,base).href)).details,id); },
     async getChapters({mangaId:id}) {
       const path = normalizeId(id); if (!path) throw parseError('MangaShi manga id is invalid.');
-      const result = [], seen = new Set(), visited = new Set(); let url = new URL(path,base).href, htmx = false;
-      for (let count = 0; count < 100; count++) {
-        const data = requireRecord(htmx ? await html(url,chaptersProjection,{htmx:true}) : (await titlePage(url)).chapters,'MangaShi chapters');
-        for (const row of requireArray(data.items,'MangaShi chapter links')) {
-          const id = normalizeId(row.href,true), title = string(normalizeText(row.title)); if (!id || !title || seen.has(id)) continue; seen.add(id);
-          const match = id.match(/\/glava[-_](\d+(?:[.,]\d+)?)/iu) ?? title.match(/(?:глава|гл\.?|chapter)\s*(\d+(?:[.,]\d+)?)/iu), date = row.text?.match(/\b(\d{1,2})[./](\d{1,2})[./](\d{4})\b/u);
-          result.push(chapter({id,title,number:match ? Number(match[1].replace(',','.')) : -1,uploadedAt:date ? new Date(Date.UTC(Number(date[3]),Number(date[2])-1,Number(date[1]))).toISOString() : null}));
-        }
-        if (!string(data.next)) break; url = new URL(data.next,base).href; if (visited.has(url)) break; visited.add(url); htmx = true;
-      }
-      return result;
+      return chapterList(new URL(path,base).href);
     },
     async getPages({chapterId:id}) {
       const path = normalizeId(id,true); if (!path) throw parseError('MangaShi chapter id is invalid.');

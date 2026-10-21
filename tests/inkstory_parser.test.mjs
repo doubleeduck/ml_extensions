@@ -59,3 +59,18 @@ test('reader chapter IDs use the existing UUID suffix contract', () => {
   assert.ok(isValidChapterId('/content/demo/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'));
   assert.ok(!isValidChapterId('/content/demo/not-an-id'));
 });
+
+test('InkStory separates genre/tag options and retains tri-state values without duplicates', () => {
+  const filters = parseFilters([
+    {slug:'action',name:'Боевик',kind:'GENRE'},
+    {slug:'system',name:'Система',kind:'TAG'},
+    {slug:'system',name:'Duplicate',kind:'TAG'},
+    {slug:' ',name:'Invalid',kind:'TAG'},
+    {slug:'unknown',name:'Unknown',kind:'OTHER'},
+  ]);
+  assert.deepEqual(filters.slice(0,3).map(f=>f.key),['sort','genre','tags']);
+  const tags = filters.find(f=>f.key==='tags');
+  assert.equal(tags.kind,'triStateMultiSelect');
+  assert.deepEqual(tags.options,[{value:'system',label:'Система',caption:null}]);
+  assert.deepEqual(filters.find(f=>f.key==='genre').options.map(o=>o.value),['action']);
+});

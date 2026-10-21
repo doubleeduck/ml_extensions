@@ -61,13 +61,21 @@ export function parsePages(payload) {
 }
 
 export function parseFilters(payload) {
-  const genres = records(payload).filter(item => item.kind === 'GENRE')
-    .filter(item => string(item.slug) && string(item.name)).map(item => [string(item.slug), string(item.name)]);
+  const options = kind => {
+    const seen = new Set();
+    return records(payload).filter(item => item.kind === kind).flatMap(item => {
+      const slug = string(item.slug), name = string(item.name);
+      if (!slug || !name || seen.has(slug)) return [];
+      seen.add(slug); return [[slug,name]];
+    });
+  };
+  const genres = options('GENRE'), tags = options('TAG');
   return [
     filter('sort', 'sort', 'Сортировка', [
       ['viewsCount', 'Популярные'], ['likesCount', 'Лайки'], ['chaptersCount', 'Количество глав'],
       ['bookmarksCount', 'Закладки'], ['averageRating', 'Высокий рейтинг'], ['createdAt', 'Новые']]),
     ...(genres.length ? [filter('triStateMultiSelect', 'genre', 'Жанры', genres)] : []),
+    ...(tags.length ? [filter('triStateMultiSelect', 'tags', 'Теги', tags)] : []),
     filter('multiSelect', 'status', 'Статус', [
       ['ONGOING', 'Выходит'], ['DONE', 'Завершено'], ['FROZEN', 'Заморожено'], ['ANNOUNCE', 'Анонс']]),
     filter('multiSelect', 'country', 'Страна', [
@@ -78,7 +86,7 @@ export function parseFilters(payload) {
       ['FOURTH_KOMA', 'Енкома'], ['COMPILATION', 'Сборник'], ['DOUJINSHI', 'Додзинси'],
       ['WEBTOON', 'Вебтун'], ['COLORED', 'Цветной'], ['ARTBOOK', 'Артбук'],
       ['SINGLE', 'Сингл'], ['LIGHT', 'Лайт'], ['WEB', 'Веб']]),
-    filter('toggle', 'strictLabelEqual', 'Строгое совпадение жанров'),
+    filter('toggle', 'strictLabelEqual', 'Строгое совпадение жанров и тегов'),
     ...[['chaptersCountMin', 'Глав от'], ['chaptersCountMax', 'Глав до'],
       ['averageRatingMin', 'Рейтинг от'], ['averageRatingMax', 'Рейтинг до'],
       ['yearMin', 'Год от'], ['yearMax', 'Год до']].map(([key, label]) => filter('text', key, label)),

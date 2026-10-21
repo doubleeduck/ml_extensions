@@ -37,9 +37,10 @@ export default function createInkStory(ctx) {
     for (const key of ['status','country','contentStatus','formats']) {
       if (filters[key]?.length) query[key] = filters[key];
     }
-    for (const value of filters.genre ?? []) {
-      if (value.startsWith('exclude:')) (query.labelsExclude ??= []).push(value.slice(8));
-      else if (value.startsWith('include:')) (query.labelsInclude ??= []).push(value.slice(8));
+    for (const [prefix,param] of [['include:','labelsInclude'],['exclude:','labelsExclude']]) {
+      const values = [...new Set(['genre','tags'].flatMap(key => filters[key] ?? [])
+        .filter(value => value.startsWith(prefix)).map(value => value.slice(prefix.length).trim()).filter(Boolean))];
+      if (values.length) query[param] = values;
     }
     if (filters.strictLabelEqual?.includes('true')) query.strictLabelEqual = 'true';
     const ranges = {chaptersCountMin:[0,100000,true], chaptersCountMax:[0,100000,true],

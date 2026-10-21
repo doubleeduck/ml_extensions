@@ -63,3 +63,18 @@ test('recommendation pages beyond first do not refetch website', async () => {
     {items:[],page:2,hasNextPage:false});
   assert.equal(ctx.requests.length,0);
 });
+
+test('InkStory combines genre/tag inclusion and exclusion in the site label parameters', async () => {
+  const ctx = context(() => []);
+  await createSource(ctx).search({page:3,selectedFilters:{
+    genre:['include:action','exclude:drama'],
+    tags:['include:system','include:action','exclude:harem','include: ', 'exclude:'],
+    strictLabelEqual:['true'],sort:['viewsCount','asc'],
+  }});
+  const query = new URL(ctx.requests[0].url).searchParams;
+  assert.deepEqual(query.getAll('labelsInclude'),['action','system']);
+  assert.deepEqual(query.getAll('labelsExclude'),['drama','harem']);
+  assert.equal(query.get('strictLabelEqual'),'true');
+  assert.equal(query.get('sort'),'viewsCount,asc');
+  assert.equal(query.get('page'),'2');
+});

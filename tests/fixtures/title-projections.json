@@ -52,6 +52,13 @@
     "title": "Fixture",
     "chapterCount": 1,
     "recommendationCount": 0,
-    "html": "<h1>Fixture</h1><a href=\"/manga/fixture/glava-1/\"><span class=\"chapter-title\">Chapter 1</span></a>"
+    "html": "<div><span class=\"tracking-widest\">Манга</span><span class=\"tracking-widest\">• Завершён</span><h1>Fixture</h1><div x-ref=\"descDesktop\">Summary</div></div><div class=\"flex\"><span class=\"tracking-widest\">Автор:</span><div>Writer</div></div><div class=\"flex\"><span class=\"tracking-widest\">Художник:</span><div>Artist</div></div><div class=\"flex\"><span class=\"tracking-widest\">Год:</span><div>2021</div></div><div class=\"flex\"><span class=\"tracking-widest\">Другие названия:</span><div>A / B</div></div><a href=\"/manga/fixture/glava-1/\">Читать сначала</a><div id=\"chapters-list\"><a href=\"/manga/fixture/glava-1/\"><span class=\"chapter-title\">Chapter 1</span></a></div>",
+    "expectedDetails": {
+      "author": "Writer",
+      "artist": "Artist",
+      "releaseYear": "2021",
+      "description": "Summary",
+      "secondaryTitle": "A, B"
+    }
   }
 ]
