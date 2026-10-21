@@ -29,6 +29,12 @@ test('unofficial ZIP/signature payload is reproducible and rejects tampering ind
   assert.equal(canonicalJson({z:1,a:{b:2,a:3}}),'{"a":{"a":3,"b":2},"z":1}');
 });
 
+test('Senkuro advertises latest and MangaChan grants its actual parent cookie domain', () => {
+  assert.ok(registrations.find(s=>s.id==='ru.senkuro').capabilities.includes('latest'));
+  const chan = registrations.find(s=>s.id==='ru.mangachan');
+  assert.deepEqual(chan.network.authOrigins,['https://im.manga-chan.me','https://manga-chan.me']);
+});
+
 test('every bundled source declares its own packaged raster branding without app assets', async () => {
   for (const source of sourceDefinitions()) {
     assert.match(source.branding.icon,/^assets\/source_logos\/[a-z0-9]+\.(png|jpg)$/u);

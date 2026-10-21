@@ -124,7 +124,7 @@ const grouple = (id,name,host,nsfw = false) => {
 const senkuro = () => {
   const host = 'senkuro.me', api = 'api.senkuro.me';
   return source('ru.senkuro','Senkuro',host,'engines/senkuro.mjs',{engine:'Senkuro GraphQL JS',nsfw:false,refresh:true,recommendations:true,
-    capabilities:['browse','search','filters'],origins:[origin(api)],images:['https://senkuro.me','https://senkuro.com','https://senkognito.com','https://senkuro.net'],
+    capabilities:['browse','latest','search','filters'],origins:[origin(api)],images:['https://senkuro.me','https://senkuro.com','https://senkognito.com','https://senkuro.net'],
     auth:{...cookieAuth(host,'/'),profileId:'host.session.v1',rules:{bearer:true,tokenStorageKeys:['auth','token','accessToken','access_token'],tokenFields:['access_token','accessToken','token','jwt']},cookieOrigins:[origin(host),origin(api)],sessionExport:{headers:['Cookie','Authorization'],values:['accessToken']}},
     template:'/manga/{id}',idPart:{separator:',,',index:1}});
 };
@@ -144,7 +144,7 @@ export const registrations = [
     // no account/raw session export and no shared browser jar.
     network:{authOrigins:['https://www.mangakakalot.gg','https://mangakakalot.gg','https://www.mangakakalove.com','https://mangakakalove.com']}}),
   source('en.weebcentral','Weeb Central','weebcentral.com','sources/weebcentral.mjs',{recommendations:true,images:['https://planeptune.us','https://weebcentral.com','https://compsci88.com'],template:'/series/{id}',bindings:{author:'author',artist:'author',tags:'tag'}}),
-  source('ru.mangachan','MangaChan','im.manga-chan.me','engines/chan.mjs',{recommendations:true,template:'/{id}',encoding:'path',images:['https://manga-chan.me'],bindings:{tags:'genres'}}),
+  source('ru.mangachan','MangaChan','im.manga-chan.me','engines/chan.mjs',{recommendations:true,template:'/{id}',encoding:'path',images:['https://manga-chan.me'],network:{authOrigins:['https://im.manga-chan.me','https://manga-chan.me']},bindings:{tags:'genres'}}),
   source('ru.mangashi','MangaShi','manga-shi.org','sources/mangashi.mjs',{refresh:true,recommendations:true,auth:cookieAuth('manga-shi.org'),template:'/{id}',encoding:'path',images:['https://manga-shi.org'],bindings:{tags:'tags'}}),
   source('ru.desu','Desu','desu.uno','sources/desu.mjs',{custom:true,refresh:true,recommendations:true,template:'/{id}',encoding:'path',images:['https://desu.uno','https://desu.me'],bindings:{tags:'genres'}}),
   metadata('ru.shikimori','Shikimori','shikimori.io','sources/shikimori.mjs',{template:'/mangas/{id}',login:'/users/sign_in',images:['https://shikimori.io','https://shikimori.one']}),

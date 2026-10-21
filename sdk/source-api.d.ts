@@ -32,6 +32,8 @@ export interface FilterDto {
   key:string; label:string; caption:string|null;
   kind:'toggle'|'text'|'singleSelect'|'multiSelect'|'triStateMultiSelect'|'sort';
   options:FilterOptionDto[]; defaultValues:string[];
+  /** Sort only. Defaults to true; false hides the unsupported direction toggle. */
+  supportsDirection?:boolean;
 }
 export interface SourceQueryDto {searchTerm:string; page:number; selectedFilters:Record<string,string[]>;}
 export interface RecommendationPageDto {items:MangaDto[];page:number;hasNextPage:boolean;}

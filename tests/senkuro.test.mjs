@@ -2,6 +2,20 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import createSenkuro,{buildFilters,filterVariables,mapManga,mapChapters} from '../src/engines/senkuro.mjs';
 const title = (id = '1') => ({id,slug:`slug-${id}`,titles:[{lang:'EN',content:'English'},{lang:'RU',content:'Русский'}],cover:{original:{url:'https://cdn.senkuro.me/a.jpg'}}});
+
+test('latest feed sends the same order variables as an explicit latest-upload sort', async () => {
+  for (const [sourceId,baseUrl] of [['ru.senkuro','https://senkuro.me'],['ru.nsfw.senkognito','https://senkognito.com']]) {
+    const calls = [], source = createSenkuro({sourceId,baseUrl,http:{request:async request => {
+      calls.push(request); return {body:{data:{mangas:{edges:[{node:title()}],pageInfo:{hasNextPage:false}}}}};
+    }}});
+    await source.getLatest();
+    await source.search({selectedFilters:{sort:['LAST_CHAPTER_AT','desc']}});
+    assert.equal(calls[0].body.variables.orderField,'LAST_CHAPTER_AT');
+    assert.equal(calls[0].body.variables.orderDirection,'DESC');
+    assert.deepEqual(calls[0].body,calls[1].body);
+    assert.equal(calls[0].url,sourceId === 'ru.senkuro' ? 'https://api.senkuro.me/graphql' : 'https://api.senkognito.com/graphql');
+  }
+});
 test('Senkuro variants retain dynamic label visibility and range/sort filter API spelling', () => {
   const labels = [{rootId:'TEFCRUw6NQ',slug:'action',depth:1,titles:[{lang:'EN',content:'Action'}]},{rootId:'TEFCRUw6Mg',slug:'adult',depth:1,titles:[{lang:'EN',content:'Adult'}]}];
   assert.equal(buildFilters(labels,true).length,13); assert.equal(buildFilters(labels,false).length,14);
