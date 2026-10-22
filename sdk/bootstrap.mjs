@@ -5,6 +5,7 @@ import {Utf8TextEncoder, Utf8TextDecoder} from './utf8.mjs';
 // Built into the host, not downloaded from an extension. All security decisions
 // (source binding, origins, credentials, limits, cancellation) remain native/host.
 const bridge = globalThis.__mlHost;
+const operationId = globalThis.__mlOperationId;
 const define = (name,value) => Object.defineProperty(globalThis,name,{value,writable:false,configurable:false});
 define('URL',URL); define('URLSearchParams',URLSearchParams);
 define('TextEncoder',Utf8TextEncoder); define('TextDecoder',Utf8TextDecoder);
@@ -40,11 +41,12 @@ function validateWire(value, seen = new Set(), depth = 0) {
   for (const child of Object.values(value)) validateWire(child,seen,depth+1);
   seen.delete(value);
 }
-let instance, definition, active = false, initialized = false;
+let instance, definition, initialized = false;
+const operations = new Set();
 const methodCapability = {getPopular:'browse',getLatest:'latest',search:'search',getFilters:'filters',getRecommendations:'recommendations'};
 const methods = ['getFilters','getPopular','getLatest','search','getDetails','getChapters','getPages','getRecommendations'];
 function call(kind,payload) {
-  if (!active) throw Object.assign(new Error('Host API unavailable outside an active request'),{code:'permission_denied'});
+  if (!operations.has(operationId())) throw Object.assign(new Error('Host API unavailable outside an active request'),{code:'permission_denied'});
   return bridge(kind,payload);
 }
 define('__mlInitialize',async config => {
@@ -58,7 +60,7 @@ define('__mlInitialize',async config => {
     log:{info:(event,fields = {}) => { void call('log',{event,fields}).catch(() => {}); }},
   });
   try {
-    // Imports/factory run with active=false: even well-formed host API calls are
+    // Imports/factory run without an operation: even well-formed host API calls are
     // disallowed during the offline installation/startup contract probe.
     const imported = await import(config.entrypoint);
     if (typeof imported.default !== 'function') throw new Error('Missing source factory export');
@@ -71,8 +73,10 @@ define('__mlInitialize',async config => {
   } catch (error) { instance = undefined; await bridge('ready',{ok:false,error:failure(error)}); }
 });
 define('__mlInvoke',async (requestId,method,args) => {
-  if (!instance || active || !Number.isSafeInteger(requestId) || requestId < 1) throw new Error('Invalid or overlapping source invocation');
-  active = true;
+  if (!instance || operations.size >= 5 || operations.has(requestId) || operationId() !== requestId ||
+      !Number.isSafeInteger(requestId) || requestId < 1) throw new Error('Invalid source invocation');
+  operations.add(requestId);
+  let result;
   try {
     if (!methods.includes(method) || typeof instance[method] !== 'function' ||
         methodCapability[method] && !definition.capabilities.includes(methodCapability[method])) {
@@ -80,8 +84,11 @@ define('__mlInvoke',async (requestId,method,args) => {
     }
     const value = await instance[method](freeze(args));
     validateWire(value);
-    // Native JSON serialization and the host DTO codec validate the result.
-    await bridge('result',{requestId,ok:true,value});
-  } catch (error) { await bridge('result',{requestId,ok:false,error:failure(error)}); }
-  finally { active = false; }
+    result = {requestId,ok:true,value};
+  } catch (error) { result = {requestId,ok:false,error:failure(error)}; }
+  finally { operations.delete(requestId); }
+  // Revoke SDK access before publishing the terminal event. Detached jobs retain
+  // their native operation identity and can never borrow another invocation.
+  await bridge('result',result);
 });
+define('__mlCancel',requestId => { operations.delete(requestId); });
