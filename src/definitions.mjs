@@ -144,7 +144,7 @@ export const registrations = [
     auth:{profileId:'host.session.v1',loginUrl:'https://remanga.org/',cookieOrigins:['https://remanga.org','https://api.remanga.org'],
       rules:{bearer:true,cookieAll:['auth:token'],tokenCookieNames:['auth:token']},sessionExport:{headers:['Cookie','Authorization'],values:[]}},
     settings:{version:1,fields:[enumSetting('branchMode','Ветки перевода',[['main','Основная'],['all','Все ветки']],'main'),
-      enumSetting('imageServer','Сервер изображений',[['original','Как на сайте'],['primary','Основной'],['reserve','Резервный']],'original')]}}),
+      enumSetting('imageServer','Сервер изображений',[['original','Автоматически'],['primary','Основной'],['reserve','Резервный']],'original')]}}),
   grouple('ru.readmanga','ReadManga','a.zazaza.me'),grouple('ru.mintmanga','MintManga','2.mintmanga.one'),grouple('ru.seimanga','SeiManga','1.seimanga.me'),
   grouple('ru.selfmanga','SelfManga','1.selfmanga.live'),grouple('ru.usagi','Usagi','a.zazaza.me'),grouple('ru.rumix','RuMIX','rumix.me'),
   senkuro(),

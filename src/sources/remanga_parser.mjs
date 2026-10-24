@@ -59,15 +59,20 @@ export function parseChapter(input,{withPublisher = false} = {}) {
 export function parsePages(input,{imageServer = 'original'} = {}) {
   const data = requireRecord(input,'ReManga reader'), access = chapterAccess(data);
   if (access.type !== 'available') throw Object.assign(Error(access.message),{code:'chapter_unavailable',phase:'parse',access});
-  const server = record(data.server), origin = string(imageServer === 'primary' ? server.link : imageServer === 'reserve' ? server.fallback_link : null);
+  const server = record(data.server), primary = new URL(requireText(server.link,'ReManga image server'));
+  const fallback = string(server.fallback_link), reserve = fallback ? new URL(fallback) : null;
+  // 'original' is the persisted automatic mode. The primary CDN can return a
+  // Cloudflare block, so prefer the reserve explicitly supplied by this API.
+  const target = imageServer === 'primary' ? primary : reserve;
+  const origins = new Set([primary.origin,...(reserve ? [reserve.origin] : [])]);
   const pages = requireArray(data.pages,'ReManga reader pages').flatMap(group => Array.isArray(group) ? group : [group]);
   if (!pages.length) throw parseError('ReManga readable chapter has no pages.');
   return pages.map((value,index) => {
-    const page = requireRecord(value,'ReManga page'), url = new URL(requireText(page.link,'ReManga page URL'),requireText(server.link,'ReManga image server'));
+    const page = requireRecord(value,'ReManga page'), url = new URL(requireText(page.link,'ReManga page URL'),primary);
     // Keep every segment, including repeated separator images, in server order.
-    // Manual server selection rewrites only a host explicitly supplied by API.
-    if (origin && [server.link,server.fallback_link].filter(Boolean).some(value => new URL(value).origin === url.origin)) {
-      const target = new URL(origin); url.protocol = target.protocol; url.host = target.host;
+    // Server selection rewrites only an origin explicitly supplied by API.
+    if (target && origins.has(url.origin)) {
+      url.protocol = target.protocol; url.host = target.host;
     }
     return {index,imageUrl:url.href};
   });

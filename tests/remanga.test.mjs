@@ -73,6 +73,28 @@ test('all reader segments retain their order, duplicates, signatures and optiona
   assert.equal(parsePages({...reader,pages:[[{link:'https://other.reimg.org/keep.jpg'}]]},{imageServer:'primary'})[0].imageUrl,'https://other.reimg.org/keep.jpg');
   assert.throws(()=>parsePages({...reader,pages:[[{}]]}),e=>e.code==='parse_error');
 });
+
+test('automatic reader server uses the API reserve when the primary image CDN is blocked', async () => {
+  const blocked = {...reader,server:{link:'https://img.reimg.org/',fallback_link:'https://img-reserve.reimg2.org/'},pages:[
+    [{link:'https://img.reimg.org/images/title/1.webp?signature=a%2Bb&expires=42'}],
+    [{link:'/images/title/2.webp?signature=second'},{link:'https://other.reimg.org/unchanged.webp'}],
+  ]};
+  const pages = parsePages(blocked);
+  assert.deepEqual(pages,[
+    {index:0,imageUrl:'https://img-reserve.reimg2.org/images/title/1.webp?signature=a%2Bb&expires=42'},
+    {index:1,imageUrl:'https://img-reserve.reimg2.org/images/title/2.webp?signature=second'},
+    {index:2,imageUrl:'https://other.reimg.org/unchanged.webp'},
+  ]);
+  // The persisted default from older package versions takes the same path.
+  assert.deepEqual(parsePages(blocked,{imageServer:'original'}),pages);
+  assert.deepEqual(parsePages(blocked,{imageServer:'reserve'}),pages);
+  assert.equal(parsePages(blocked,{imageServer:'primary'})[0].imageUrl,'https://img.reimg.org/images/title/1.webp?signature=a%2Bb&expires=42');
+  assert.equal(parsePages({...blocked,server:{link:blocked.server.link}})[0].imageUrl,'https://img.reimg.org/images/title/1.webp?signature=a%2Bb&expires=42');
+  let calls=0;
+  const source=createRemanga(context(async()=>{calls++;return reply(blocked)}));
+  assert.deepEqual(await source.getPages({chapterId:'1976293'}),pages);
+  assert.equal(calls,1); // No CDN probes or title requests in JavaScript.
+});
 test('Next filter data is parsed as JSON across script chunks without running JavaScript', () => {
   const text=`6:${JSON.stringify(['$','$L1',null,{filtersOptions:options}])}\n`;
   const cut=Math.floor(text.length/2);
