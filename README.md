@@ -1,6 +1,6 @@
 # MangaLaunch Unofficial Extensions
 
-Неофициальное расширение MangaLaunch: подписанный пакет **20 обычных источников** для MangaLaunch.
+Неофициальное расширение MangaLaunch: подписанный пакет **21 обычного источника** для MangaLaunch.
 Идентификатор расширения: `official.mangalaunch.sources`.
 NSFW-источники вынесены в отдельный репозиторий `nsfw_ml_extensions`; в этом пакете они не регистрируются и их отдельные модули и иконки отсутствуют.
 
@@ -10,6 +10,7 @@ NSFW-источники вынесены в отдельный репозито�
 - **MangaDex** — `ru.mangadex`
 - **MangaDex** — `en.mangadex`
 - **MangaLib** — `ru.mangalib`
+- **ReManga** — `ru.remanga` (каталог, фильтры, чтение, рекомендации, WebView-вход и смена базового URL)
 - **ReadManga** — `ru.readmanga`
 - **MintManga** — `ru.mintmanga`
 - **SeiManga** — `ru.seimanga`
@@ -78,6 +79,7 @@ Workflows проверяют изменения, собирают CI-архив 
 - [Проверки и выпуск](docs/BUILD_AND_RELEASE.md)
 - [Сборка через PowerShell](docs/GITHUB_RELEASE_WITH_BUILD_PACKAGE.md)
 - [Настройка GitHub Actions](docs/GITHUB_ACTIONS_SETUP_RU.md)
+- [Контракт и проверки ReManga](docs/REMANGA_2026-10-24_RU.md)
 
 Node fixtures и offline-фабрики не заменяют живую проверку сайтов и аккаунтов.
 

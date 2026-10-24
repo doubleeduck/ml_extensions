@@ -14,6 +14,10 @@ const sourceBranding = {
     "icon": "assets/source_logos/mangalib.png",
     "accentColor": "#32B09B"
   },
+  "remanga": {
+    "icon": "assets/source_logos/remanga.png",
+    "accentColor": "#3C83F6"
+  },
   "readmanga": {
     "icon": "assets/source_logos/readmanga.png",
     "accentColor": "#EF6A6A"
@@ -134,6 +138,13 @@ export const registrations = [
     template:'/{id}',encoding:'path',origins:['https://api.inuko.me'],images:['https://inuko.me','https://inkstory.net'],bindings:{tags:'genre'},media:{transform:{algorithm:'xor',origin:'https://static.inuko.me',pathPrefix:'/chapters/',stemLength:36,markerOffset:14,marker:'x',key:[85,121,83,107,112,48,66,122,80,104,119,108,118,80,50,86]}}}),
   ...['ru','en'].map(language => source(`${language}.mangadex`,'MangaDex','mangadex.org','engines/mangadex.mjs',{engine:'MangaDex API JS',recommendations:true,parameters:{translatedLanguage:language},origins:['https://api.mangadex.org'],images:['https://uploads.mangadex.org','https://mangadex.network'],template:'/title/{id}',bindings:{tags:'tags'}})),
   libgroup('ru.mangalib','MangaLib','mangalib.me',1),
+  source('ru.remanga','ReManga','remanga.org','sources/remanga.mjs',{engine:'ReManga API JS',custom:true,refresh:true,recommendations:true,
+    parameters:{apiBaseUrl:'https://api.remanga.org'},origins:['https://api.remanga.org'],images:['https://reimg.org','https://reimg2.org'],
+    template:'/manga/{id}/main',bindings:{tags:'categories'},
+    auth:{profileId:'host.session.v1',loginUrl:'https://remanga.org/',cookieOrigins:['https://remanga.org','https://api.remanga.org'],
+      rules:{bearer:true,cookieAll:['auth:token'],tokenCookieNames:['auth:token']},sessionExport:{headers:['Cookie','Authorization'],values:[]}},
+    settings:{version:1,fields:[enumSetting('branchMode','Ветки перевода',[['main','Основная'],['all','Все ветки']],'main'),
+      enumSetting('imageServer','Сервер изображений',[['original','Как на сайте'],['primary','Основной'],['reserve','Резервный']],'original')]}}),
   grouple('ru.readmanga','ReadManga','a.zazaza.me'),grouple('ru.mintmanga','MintManga','2.mintmanga.one'),grouple('ru.seimanga','SeiManga','1.seimanga.me'),
   grouple('ru.selfmanga','SelfManga','1.selfmanga.live'),grouple('ru.usagi','Usagi','a.zazaza.me'),grouple('ru.rumix','RuMIX','rumix.me'),
   senkuro(),

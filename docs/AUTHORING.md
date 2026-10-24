@@ -1,4 +1,4 @@
-> Текущий состав: 20 обычных источников, пакет `official.mangalaunch.sources`.
+> Текущий состав: 21 обычный источник, пакет `official.mangalaunch.sources`.
 > Разделение, новые NSFW ID и переход: [SOURCE_BUNDLE_SPLIT_RU.md](SOURCE_BUNDLE_SPLIT_RU.md).
 
 # Создание JS-источника: SDK v1
@@ -36,7 +36,7 @@ tests/…                # developer-only, в пакет не включаютс
 ```
 
 Пул Unofficial Extensions собирается отдельно: `src/definitions.mjs` → один manifest с
-20 sourceId; `src/index.mjs` → dispatcher фабрик. Новый source пакета требует
+21 sourceId; `src/index.mjs` → dispatcher фабрик. Новый source пакета требует
 обновить обе регистрации и tests. NSFW и обычные источники выпускаются раздельными пакетами; см. SOURCE_BUNDLE_SPLIT_RU.md.
 
 Общие engines должны быть фабриками. Изменяемое состояние, cursors и кэши
@@ -152,7 +152,7 @@ tagName доступны по SDK type. Это data-only API, не удалён�
 поддержанный host auth profile, login URL, exact cookieOrigins и sessionExport.
 Профили — `host.cookie.v1`/`host.session.v1`; `auth.rules` содержит только данные:
 `bearer`, `cookieAll`/`cookieAny`, `tokenStorageKeys`, `tokenPath`, `tokenTypePath`,
-`tokenType`, `tokenFields`. Все чтения browser storage, разбор токенов и
+`tokenType`, `tokenFields`, `tokenCookieNames`. Все чтения browser storage, разбор токенов и
 распознавание сессии исполняются **в приложении**. Сайтоспецифичные callbacks
 не поддерживаются; хост проверяет границы декларации до запуска worker.
 Даже две версии одного сайта имеют отдельные cookies/tokens/browser profile.
@@ -171,6 +171,17 @@ const result = await ctx.http.request({method:'POST',url:apiUrl,responseType:'js
 Передавайте authRevision; при logout/смене сессии host отменит устаревший запрос.
 Не храните snapshot/token в module globals и не пишите его в log/errors/settings.
 Login cookies не передаются в произвольный CDN или соседний источник.
+
+Для сайта, хранящего Bearer в cookie, объявите `bearer:true` и точные имена в
+`tokenCookieNames` (без wildcard). Host декодирует значение cookie и формирует
+`Authorization` только для разрешённых `authOrigins`. Имена cookies могут
+содержать `:`. Токен берётся из актуального source-owned jar; отдельная копия
+в preferences не сохраняется и после удаления cookie не восстанавливается.
+`sessionExport.headers` должен разрешать `Authorization`; объявляйте `Cookie`
+отдельно, если сайту нужны также browser/anti-bot cookies. Browser import —
+полный снимок cookies для опрошенного URL, поэтому исчезнувшие при выходе
+cookies удаляются из jar. HTTP Set-Cookie продолжает применяться инкрементально.
+Эти правила требуют версии приложения с поддержкой `tokenCookieNames`.
 
 Настройки — manifest `settings:{version,fields}` с boolean/string/integer/enum,
 label/default/ограничениями. `ctx.settings.get/set` видят только свой sourceId и

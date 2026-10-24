@@ -5,9 +5,9 @@ import {readFile,readdir} from 'node:fs/promises';
 import {registrations,sourceDefinitions,manifestDefinition} from '../src/definitions.mjs';
 import createSource from '../src/index.mjs';
 import {canonicalJson,packageZip,signedManifest,verifyPackage} from '../tools/package_format.mjs';
-test('unofficial package registers 20 standard IDs and its offline factories never perform IO', () => {
-  assert.equal(registrations.length,20); assert.equal(new Set(registrations.map(source => source.id)).size,20);
-  assert.deepEqual(registrations.map(source => source.id),["ru.inkstory","ru.mangadex","en.mangadex","ru.mangalib","ru.readmanga","ru.mintmanga","ru.seimanga","ru.selfmanga","ru.usagi","ru.rumix","ru.senkuro","en.mangafox","en.mangakakalot","en.weebcentral","ru.mangachan","ru.mangashi","ru.desu","ru.shikimori","en.anilist","en.myanimelist"]);
+test('unofficial package registers 21 standard IDs and its offline factories never perform IO', () => {
+  assert.equal(registrations.length,21); assert.equal(new Set(registrations.map(source => source.id)).size,21);
+  assert.deepEqual(registrations.map(source => source.id),["ru.inkstory","ru.mangadex","en.mangadex","ru.mangalib","ru.remanga","ru.readmanga","ru.mintmanga","ru.seimanga","ru.selfmanga","ru.usagi","ru.rumix","ru.senkuro","en.mangafox","en.mangakakalot","en.weebcentral","ru.mangachan","ru.mangashi","ru.desu","ru.shikimori","en.anilist","en.myanimelist"]);
   assert.ok(registrations.every(source => source.isNsfw === false));
   assert.equal(manifestDefinition({version:'1.0.0',publisherKeyId:'fixture'}).extensionId,'official.mangalaunch.sources');
   const deny = () => { throw Error('Factory must not perform IO.'); };
@@ -24,7 +24,7 @@ test('unofficial ZIP/signature payload is reproducible and rejects tampering ind
   for (const definition of registrations) payload.set(definition.branding.icon,Buffer.from('Fixture image bytes'));
   const signed = signedManifest(manifestDefinition({version:'1.0.0',publisherKeyId:'test-generated'}),payload,pem);
   const files = new Map([['manifest.json',signed.bytes],['signature.ed25519',signed.signature],...payload]), first = packageZip(files), second = packageZip(new Map([...files].reverse()));
-  assert.deepEqual(first,second); assert.equal(verifyPackage(first,signed.publicKey).sources.length,20);
+  assert.deepEqual(first,second); assert.equal(verifyPackage(first,signed.publicKey).sources.length,21);
   const corrupt = Buffer.from(first); corrupt[40] ^= 1; assert.throws(() => verifyPackage(corrupt,signed.publicKey));
   assert.equal(canonicalJson({z:1,a:{b:2,a:3}}),'{"a":{"a":3,"b":2},"z":1}');
 });

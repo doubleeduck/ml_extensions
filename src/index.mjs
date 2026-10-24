@@ -1,6 +1,7 @@
 import createInkStory from './sources/inkstory.mjs';
 import createMangaDex from './engines/mangadex.mjs';
 import createLibGroup from './engines/libgroup.mjs';
+import createRemanga from './sources/remanga.mjs';
 import createGrouple from './engines/grouple.mjs';
 import createSenkuro from './engines/senkuro.mjs';
 import createMangaFox from './sources/mangafox.mjs';
@@ -18,6 +19,7 @@ const factories = new Map([
   ['ru.mangadex',createMangaDex],
   ['en.mangadex',createMangaDex],
   ['ru.mangalib',createLibGroup],
+  ['ru.remanga',createRemanga],
   ['ru.readmanga',createGrouple],
   ['ru.mintmanga',createGrouple],
   ['ru.seimanga',createGrouple],

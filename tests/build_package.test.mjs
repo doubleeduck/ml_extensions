@@ -35,7 +35,7 @@ test('build-package.ps1 produces all five public release assets, independently v
   const manifest = verifyPackage(archive, Buffer.from(publicRecord.publicKey, 'base64'));
   assert.equal(manifest.version, '1.2.3-dev.1');
   assert.equal(manifest.publisherKeyId, 'isolated-test-key');
-  assert.equal(new Set(manifest.sources.map(s => s.id)).size, 20);
+  assert.equal(new Set(manifest.sources.map(s => s.id)).size, 21);
   assert.equal(manifest.extensionId, manifestDefinition({version:'1.0.0',publisherKeyId:'fixture'}).extensionId);
   assert.deepEqual(manifest.sources.map(s=>s.id),registrations.map(s=>s.id));
   assert.ok(manifest.sources.every(s=>s.isNsfw===false));
