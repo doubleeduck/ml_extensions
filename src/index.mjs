@@ -1,3 +1,5 @@
+import createAstraManga from './sources/astramanga.mjs';
+import createComX from './sources/comx.mjs';
 import createInkStory from './sources/inkstory.mjs';
 import createMangaDex from './engines/mangadex.mjs';
 import createLibGroup from './engines/libgroup.mjs';
@@ -15,6 +17,8 @@ import createAniList from './sources/anilist.mjs';
 import createMyAnimeList from './sources/myanimelist.mjs';
 
 const factories = new Map([
+  ['ru.astramanga',createAstraManga],
+  ['ru.comx',createComX],
   ['ru.inkstory',createInkStory],
   ['ru.mangadex',createMangaDex],
   ['en.mangadex',createMangaDex],

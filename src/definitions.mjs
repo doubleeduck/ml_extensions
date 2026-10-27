@@ -2,6 +2,8 @@
 const browse = ['browse','latest','search','filters'];
 const origin = host => `https://${host}`;
 const sourceBranding = {
+  "astramanga": {"icon":"assets/source_logos/astramanga.png","accentColor":"#8B5CF6"},
+  "comx": {"icon":"assets/source_logos/comx.png","accentColor":"#E5484D"},
   "inkstory": {
     "icon": "assets/source_logos/inkstory.png",
     "accentColor": "#2979EF"
@@ -134,6 +136,13 @@ const senkuro = () => {
 };
 const metadata = (id,name,host,module,extra = {}) => source(id,name,host,module,{...extra,metadataOnly:true,recommendations:true,auth:cookieAuth(host,extra.login ?? '/login'),template:extra.template ?? '/manga/{id}'});
 export const registrations = [
+  source('ru.astramanga','AstraManga','astramanga.org','sources/astramanga.mjs',{engine:'AstraManga API/SSR JS',custom:true,refresh:true,recommendations:true,
+    origins:['https://api.astramanga.org'],images:['https://img.astramanga.org'],parameters:{apiBaseUrl:'https://api.astramanga.org'},template:'/manga/{id}',bindings:{tags:'genres'},
+    network:{transportProfile:'host.platform.v1'},auth:{profileId:'host.cookie.v1',loginUrl:'https://astramanga.org/',cookieOrigins:['https://astramanga.org','https://api.astramanga.org'],rules:{cookieAll:['access_token']},sessionExport:{headers:['Cookie'],values:[]}}}),
+  source('ru.comx','Com-X','com-x.life','sources/comx.mjs',{engine:'Com-X HTML/JSON JS',custom:true,refresh:true,recommendations:true,
+    images:['https://img.com-x.life','https://rus.com-x.life'],template:'/{id}-manga.html',bindings:{tags:'g',author:'a',artist:'artist'},network:{transportProfile:'host.platform.v1'},
+    auth:{profileId:'host.cookie.v1',loginUrl:'https://com-x.life/',cookieOrigins:['https://com-x.life','https://img.com-x.life','https://rus.com-x.life'],rules:{cookieAll:['dle_user_id','dle_password']},sessionExport:{headers:['Cookie'],values:[]}},
+    settings:{version:1,fields:[enumSetting('imageServer','Сервер изображений',[['auto','Автоматически'],['global','Основной'],['ru','Для России']],'auto')]}}),
   source('ru.inkstory','InkStory','inkstory.net','sources/inkstory.mjs',{engine:'InkStory API/HTML JS',custom:true,refresh:true,recommendations:true,
     template:'/{id}',encoding:'path',origins:['https://api.inuko.me'],images:['https://inuko.me','https://inkstory.net'],bindings:{tags:'genre'},media:{transform:{algorithm:'xor',origin:'https://static.inuko.me',pathPrefix:'/chapters/',stemLength:36,markerOffset:14,marker:'x',key:[85,121,83,107,112,48,66,122,80,104,119,108,118,80,50,86]}}}),
   ...['ru','en'].map(language => source(`${language}.mangadex`,'MangaDex','mangadex.org','engines/mangadex.mjs',{engine:'MangaDex API JS',recommendations:true,parameters:{translatedLanguage:language},origins:['https://api.mangadex.org'],images:['https://uploads.mangadex.org','https://mangadex.network'],template:'/title/{id}',bindings:{tags:'tags'}})),
