@@ -1,4 +1,5 @@
 import createAstraManga from './sources/astramanga.mjs';
+import createPureManga from './sources/puremanga.mjs';
 import createComX from './sources/comx.mjs';
 import createInkStory from './sources/inkstory.mjs';
 import createMangaDex from './engines/mangadex.mjs';
@@ -17,6 +18,7 @@ import createAniList from './sources/anilist.mjs';
 import createMyAnimeList from './sources/myanimelist.mjs';
 
 const factories = new Map([
+  ['ru.puremanga',createPureManga],
   ['ru.astramanga',createAstraManga],
   ['ru.comx',createComX],
   ['ru.inkstory',createInkStory],
