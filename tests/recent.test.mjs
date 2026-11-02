@@ -29,6 +29,28 @@ test('failed title loads are retried and factory caches never share state', asyn
   assert.throws(() => recent(fetch,{limit:0}),TypeError);
 });
 
+test('completed cache bounds never evict active requests', async () => {
+  const releases = new Map(), calls = [];
+  const load = recent(key => {
+    calls.push(key);
+    return new Promise(resolve => releases.set(key,resolve));
+  },{limit:2});
+  const first = load('a'), second = load('b'), third = load('c');
+  await Promise.resolve();
+  assert.equal(load('a'),first);
+  assert.deepEqual(calls,['a','b','c']);
+  releases.get('a')('a'); await first;
+  releases.get('b')('b'); await second;
+  releases.get('c')('c'); await third;
+  assert.equal(load('b'),second);
+  assert.equal(load('c'),third);
+  const retry = load('a');
+  await Promise.resolve();
+  assert.deepEqual(calls,['a','b','c','a']);
+  releases.get('a')('new a');
+  assert.equal(await retry,'new a');
+});
+
 test('taxonomy cache accepts 128 entries and rejects unbounded configurations', async () => {
   let calls=0; const lookup=recent(async key=>{calls++;return key;},{limit:128});
   for(let i=0;i<128;i++) await lookup(i);

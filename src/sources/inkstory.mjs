@@ -29,7 +29,6 @@ export default function createInkStory(ctx) {
   }
   const book = recent(path => json(`books/${path.split('/').at(-1)}`));
   async function catalog({page = 1, sort = 'viewsCount,desc', search = '', filters = {}} = {}) {
-    await base();
     const order = filters.sort ?? [];
     const query = {serviceName:'inkstory', page:Math.max(0, page-1), size:30,
       sort:order.length ? `${order[0]},${order.length > 1 && order[1] === 'asc' ? 'asc' : 'desc'}` : sort};
@@ -61,14 +60,12 @@ export default function createInkStory(ctx) {
     },
     async getPopular({page = 1} = {}) { return catalog({page}); },
     async getLatest({page = 1} = {}) {
-      await base();
       return parseCatalog(await json('chapter-update-feed', {serviceName:'inkstory', onlyBorderChapters:'true', page:Math.max(0,page-1), size:30}));
     },
     async search({searchTerm = '', page = 1, selectedFilters = {}}) {
       return catalog({page, search:searchTerm, filters:selectedFilters});
     },
     async getDetails({mangaId}) {
-      await base();
       const path = mangaPath(mangaId);
       return parseManga(record(await book(path)));
     },

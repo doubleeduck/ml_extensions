@@ -39,6 +39,29 @@ test('WeebCentral reader/recommendation pagination does not request nonexistent 
   assert.deepEqual(await source.getPages({chapterId:'/chapters/ABC'}),[{index:0,imageUrl:'https://hot.planeptune.us/1.png'},{index:1,imageUrl:'https://weebcentral.com/2.png'}]);
   await assert.rejects(source.getPages({chapterId:'/bad/'}),error => error.code === 'parse_error');
 });
+
+test('WeebCentral details and recommendations share one title request and extraction, retrying failures', async () => {
+  let requests = 0, extractions = 0;
+  const source = createWeebCentral({http:{request:async input => {
+    requests++;
+    if (requests === 1) throw Object.assign(Error('offline'),{code:'network'});
+    assert.equal(input.url,'https://weebcentral.com/series/A');
+    return {url:input.url,body:'title'};
+  }},html:{extract:async (_body,projection) => {
+    extractions++;
+    assert.ok(projection.fields.details);
+    assert.ok(projection.fields.recommendations);
+    return {details:{sections:[{source:'/cover/small/a.webp',rows:[]},{heading:'A',rows:[row('Description:','Text')]}]},
+      recommendations:[{heading:'Recommendations',items:[card('A'),card('B')]}]};
+  }}});
+  const failed = await Promise.allSettled([source.getDetails({mangaId:'A'}),source.getRecommendations({mangaId:'A'})]);
+  assert.ok(failed.every(result => result.status === 'rejected' && result.reason.code === 'network'));
+  assert.equal(requests,1);
+  const [details,recommendations] = await Promise.all([source.getDetails({mangaId:'A'}),source.getRecommendations({mangaId:'A'})]);
+  assert.equal(details.title,'A'); assert.equal(details.description,'Text');
+  assert.deepEqual(recommendations.items.map(item => item.id),['B']);
+  assert.equal(requests,2); assert.equal(extractions,1);
+});
 test('WeebCentral grants the image host used by Kurotsuki no Yaergnacht chapters', async () => {
   const definition = sourceDefinitions().find(source => source.id === 'en.weebcentral');
   const imageUrl = 'https://scans.lastation.us/manga/kurotsuki-no-yaergnacht/0001-001.png';

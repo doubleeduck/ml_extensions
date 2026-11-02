@@ -88,7 +88,7 @@ export default function createSenkuro(ctx) {
   const excludeAdult = ctx.sourceId === 'ru.senkuro', api = excludeAdult ? 'https://api.senkuro.me/graphql' : 'https://api.senkognito.com/graphql';
   const appId = excludeAdult ? '4026531840100' : '5033164800100', appVersion = excludeAdult ? '310726' : '270526';
   // Per-instance caches only: no shared auth/settings/cursors between variants.
-  const cursors = new Map(); let filters = null;
+  const cursors = new Map(); let filters = null, pendingFilters = null;
   async function post(payload) {
     const reply = await ctx.http.request({method:'POST',url:api,responseType:'json',body:payload,userAgentProfile:'reader',headers:{
       Accept:'application/json','Content-Type':'application/json',Origin:new URL(ctx.baseUrl).origin,Referer:`${new URL(ctx.baseUrl).origin}/`,'app-id':appId,'app-version':appVersion}});
@@ -99,29 +99,61 @@ export default function createSenkuro(ctx) {
     return data;
   }
   const graph = (query,variables) => post({query,variables});
-  async function catalog(variables,page) {
+  function catalog(variables,page) {
     const normalized = Math.max(1,page), key = JSON.stringify(canonical(variables));
-    let cache = cursors.get(key); if (!cache) { cache = new Map([[1,null]]); cursors.set(key,cache); }
-    const load = async after => requireRecord((await graph(catalogQuery,{...variables,after})).mangas,'Senkuro catalog connection');
+    let state = cursors.get(key);
+    // Refresh starts a new cursor chain; active callers keep their own chain.
+    if (!state || normalized === 1 && !state.pending.has(1)) state = {cursors:new Map([[1,null]]),pending:new Map(),loads:new Map(),endPage:Infinity};
+    cursors.delete(key); cursors.set(key,state);
+    while (cursors.size > 16) cursors.delete(cursors.keys().next().value);
+    if (state.pending.has(normalized)) return state.pending.get(normalized);
+    const pending = catalogPage(variables,normalized,state).finally(() => state.pending.delete(normalized));
+    state.pending.set(normalized,pending);
+    return pending;
+  }
+  async function catalogPage(variables,normalized,state) {
+    const cache = state.cursors;
+    function load(after) {
+      if (state.loads.has(after)) return state.loads.get(after);
+      const pending = graph(catalogQuery,{...variables,after}).then(data => requireRecord(data.mangas,'Senkuro catalog connection'))
+        .finally(() => state.loads.delete(after));
+      state.loads.set(after,pending);
+      return pending;
+    }
+    function remember(page,data) {
+      const info = record(data.pageInfo);
+      if (info.hasNextPage !== true) { state.endPage = Math.min(state.endPage,page); return false; }
+      const cursor = string(read(info.endCursor));
+      if (!cursor || cursor === cache.get(page)) throw parseError('Senkuro pagination cursor did not advance.');
+      cache.set(page+1,cursor);
+      // Keep the first cursor so an evicted position can always be reconstructed.
+      while (cache.size > 256) cache.delete([...cache.keys()].find(key => key !== 1));
+      return true;
+    }
+    if (normalized > state.endPage) return [];
     let requests = 0;
     while (!cache.has(normalized)) {
       if (++requests > 200) throw Object.assign(Error('Senkuro pagination work limit.'),{code:'resource_limit',phase:'pagination'});
-      const previous = Math.max(...[...cache.keys()].filter(page => page < normalized)), data = await load(cache.get(previous)), info = record(data.pageInfo);
-      if (info.hasNextPage !== true) return [];
-      const cursor = string(read(info.endCursor)); if (!cursor || cursor === cache.get(previous)) throw parseError('Senkuro pagination cursor did not advance.');
-      cache.set(previous+1,cursor);
+      const previous = Math.max(...[...cache.keys()].filter(page => page < normalized)), data = await load(cache.get(previous));
+      if (!remember(previous,data)) return [];
     }
-    const data = await load(cache.get(normalized)), info = record(data.pageInfo);
-    if (info.hasNextPage === true) { const cursor = string(read(info.endCursor)); if (cursor) cache.set(normalized+1,cursor); }
-    while (cursors.size > 16) cursors.delete(cursors.keys().next().value);
+    const data = await load(cache.get(normalized));
+    remember(normalized,data);
     return list(data.edges).map(value => record(record(value).node)).filter(row => Object.keys(row).length).map(value => mapManga(value));
   }
   return {
     async getFilters({refresh = false} = {}) {
       if (filters && !refresh) return filters;
-      let labels = [];
-      try { labels = (await graph(filtersQuery,{})).allLabels; } catch (error) { if (['cancelled','auth_session_changed','permission_denied','resource_limit'].includes(error.code)) throw error; }
-      return filters = buildFilters(labels,excludeAdult);
+      if (pendingFilters) return pendingFilters;
+      pendingFilters = (async () => {
+        try { return filters = buildFilters((await graph(filtersQuery,{})).allLabels,excludeAdult); }
+        catch (error) {
+          if (['cancelled','auth_session_changed','permission_denied','resource_limit'].includes(error.code)) throw error;
+          // A temporary failure must not permanently cache the label-less fallback.
+          return filters ?? buildFilters([],excludeAdult);
+        }
+      })().finally(() => { pendingFilters = null; });
+      return pendingFilters;
     },
     async getPopular({page = 1} = {}) { return catalog({first:20,orderField:'POPULARITY_SCORE',orderDirection:'DESC',...filterVariables({},excludeAdult)},page); },
     async getLatest({page = 1} = {}) { return catalog({first:20,orderField:'LAST_CHAPTER_AT',orderDirection:'DESC',...filterVariables({},excludeAdult)},page); },

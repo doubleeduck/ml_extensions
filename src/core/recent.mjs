@@ -3,22 +3,28 @@
 // factory in the host; neither successful pages nor failures cross that scope.
 export function recent(load,{ttlMs = 15000,limit = 2,now = () => Date.now()} = {}) {
   if (!Number.isFinite(ttlMs) || ttlMs <= 0 || !Number.isInteger(limit) || limit < 1 || limit > 128) throw new TypeError('Invalid title cache bounds.');
-  const entries = new Map();
+  // Only completed values take LRU slots. Evicting active work would let the
+  // next caller start a duplicate request while the first is still running.
+  const entries = new Map(), pending = new Map();
   return function(key) {
+    if (pending.has(key)) return pending.get(key);
     const old = entries.get(key);
     if (old && old.expires > now()) {
       entries.delete(key); entries.set(key,old); return old.promise;
     }
     entries.delete(key);
-    while (entries.size >= limit) entries.delete(entries.keys().next().value);
-    const entry = {expires:Infinity,promise:null};
+    const entry = {expires:0,promise:null};
     entry.promise = Promise.resolve().then(() => load(key)).then(value => {
-      entry.expires = now()+ttlMs; return value;
+      pending.delete(key);
+      entry.expires = now()+ttlMs;
+      entries.set(key,entry);
+      while (entries.size > limit) entries.delete(entries.keys().next().value);
+      return value;
     },error => {
-      if (entries.get(key) === entry) entries.delete(key);
+      pending.delete(key);
       throw error;
     });
-    entries.set(key,entry);
+    pending.set(key,entry.promise);
     return entry.promise;
   };
 }

@@ -1,5 +1,6 @@
 import {chapter,filter,isoDate,manga,normalizeText,parseError,record,string} from '../core/data.mjs';
 import {requireArray,requireRecord,urlWithQuery} from '../core/http.mjs';
+import {recent} from '../core/recent.mjs';
 
 const base = 'https://weebcentral.com';
 const tags = ['Action','Adult','Adventure','Comedy','Doujinshi','Drama','Ecchi','Fantasy','Gender Bender','Harem','Hentai',
@@ -131,6 +132,7 @@ export default function createWeebCentral(ctx) {
     if (typeof response.body !== 'string' || !response.body.trim()) throw Object.assign(Error('Weeb Central returned an empty page.'),{code:'invalid_response',phase:'http'});
     return {url:response.url ?? url,data:await ctx.html.extract(response.body,{...projection,baseUrl:response.url ?? url})};
   }
+  const titlePage = recent(id => html(titleUrl(id),{fields:{details:detailsProjection,recommendations:recommendationsProjection}}));
   return {
     async getFilters() { return buildFilters(); },
     async getPopular({page = 1} = {}) { return parseCatalog((await html(searchUrl({page},'Popularity'),catalogProjection)).data); },
@@ -141,7 +143,7 @@ export default function createWeebCentral(ctx) {
       }
       return parseCatalog((await html(searchUrl(query),catalogProjection)).data);
     },
-    async getDetails({mangaId:id}) { const page = await html(titleUrl(id),detailsProjection); return parseDetails(page.data,id,page.url); },
+    async getDetails({mangaId:id}) { const page = await titlePage(id); return parseDetails(page.data.details,id,page.url); },
     async getChapters({mangaId:id}) { return parseChapters((await html(`${titleUrl(id)}/full-chapter-list`,chaptersProjection)).data); },
     async getPages({chapterId:id}) {
       const normalized = chapterId(id); if (!normalized) throw parseError('Weeb Central chapter id is missing.');
@@ -152,8 +154,8 @@ export default function createWeebCentral(ctx) {
     },
     async getRecommendations({mangaId:id,page = 1}) {
       const normalized = Math.max(1,page); if (normalized > 1) return {items:[],page:normalized,hasNextPage:false};
-      const {data} = await html(titleUrl(id),recommendationsProjection);
-      const section = requireArray(data,'Weeb Central recommendations').find(value => normalizeText(record(value).heading).toLowerCase() === 'recommendations');
+      const {data} = await titlePage(id);
+      const section = requireArray(data.recommendations,'Weeb Central recommendations').find(value => normalizeText(record(value).heading).toLowerCase() === 'recommendations');
       return {items:section ? parseCatalog(section.items,id) : [],page:normalized,hasNextPage:false};
     },
   };
