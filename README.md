@@ -1,14 +1,13 @@
 # MangaLaunch Unofficial Extensions
 
-Неофициальное расширение MangaLaunch: подписанный пакет **21 обычного источника** для MangaLaunch.
-Идентификатор расширения: `official.mangalaunch.sources`.
-NSFW-источники вынесены в отдельный репозиторий `nsfw_ml_extensions`; в этом пакете они не регистрируются и их отдельные модули и иконки отсутствуют.
+Неофициальное расширение MangaLaunch: подписанный пакет **15 обычных источников** для MangaLaunch.
 
 ## Источники
 
-- **InkStory** — `ru.inkstory`
-- **MangaDex** — `ru.mangadex`
-- **MangaDex** — `en.mangadex`
+- **PureManga** — `ru.puremanga` (SSO-вход Inuko, фильтры, чтение и похожие тайтлы)
+- **AstraManga** — `ru.astramanga` (вход, фильтры, чтение, связанные и похожие тайтлы)
+- **Com-X** — `ru.comx` (вход, проверка браузера, включение/исключение фильтров, чтение и «С этим читают»)
+- **InkStory** — `ru.inkstory` (SSO-вход Inuko, фильтры, чтение и похожие тайтлы)
 - **MangaLib** — `ru.mangalib`
 - **ReManga** — `ru.remanga` (каталог, фильтры, чтение, рекомендации, WebView-вход и смена базового URL)
 - **ReadManga** — `ru.readmanga`
@@ -19,18 +18,12 @@ NSFW-источники вынесены в отдельный репозито�
 - **RuMIX** — `ru.rumix`
 - **Senkuro** — `ru.senkuro`
 - **MangaFox** — `en.mangafox`
-- **Mangakakalot** — `en.mangakakalot`
-- **Weeb Central** — `en.weebcentral`
-- **MangaChan** — `ru.mangachan`
 - **MangaShi** — `ru.mangashi`
-- **Desu** — `ru.desu`
-- **Shikimori** — `ru.shikimori`
-- **AniList** — `en.anilist`
-- **MyAnimeList** — `en.myanimelist`
 
 Технические extensionId, имена архивов, publisher KeyId и GitHub environment
 сохраняют прежние значения с `official` для совместимости обновлений.
 Отображаемое название пакета — Unofficial Extensions.
+
 
 ## Документация
 

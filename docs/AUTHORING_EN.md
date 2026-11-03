@@ -43,7 +43,6 @@ To add a source to an existing bundle, add its module under `src/sources/` or a 
 
 The official project package is named **Official Extensions**; the two independent packages are named **Unofficial Extensions** and **Unofficial NSFW Extensions**. Existing technical IDs and archive names are retained for updates. For a new independent package, choose your own unique `extensionId`, publisher key and source IDs; do not use someone else's namespace. Publish NSFW sources in the separate appropriate package and mark them `isNsfw: true`.
 
-Source, manga and chapter IDs must remain stable: the library, history and progress depend on them. A domain change is not an ID change. Do not move an already published sourceId to another package or publisher: uninstalling a package does not release its registered ownership.
 
 ## 2. Manifest for a separate package
 

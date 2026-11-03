@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {isValidChapterId, normalizeImageUrl, parseCatalog, parseChapters, parseFilters, parsePages} from '../src/sources/inkstory_parser.mjs';
+import {isValidChapterId, normalizeImageUrl, parseManga, parseChapters, parseFilters, parsePages} from '../src/sources/inkstory_parser.mjs';
 
 test('InkStory preserves existing manga/chapter IDs, aliases and metadata', () => {
   const book = {slug:'demo', name:{ru:'Демо',en:'Demo'}, poster:'https://static.inuko.me/cover.jpg',
     labels:[{slug:'action',name:'Боевик',kind:'GENRE'}]};
-  const [manga] = parseCatalog([{book}]);
+  const manga = parseManga(book);
   assert.equal(manga.id, '/content/demo');
   assert.equal(manga.title, 'Демо');
   assert.equal(manga.secondaryTitle, 'Demo');
@@ -46,6 +46,13 @@ test('pages retain index ordering and image transformation', () => {
   assert.equal(normalizeImageUrl(url), url.replace('-saaa-', '-xaaa-'));
   assert.deepEqual(parsePages({pages:[{index:1,image:'https://img.example/2.webp'}, {index:0,image:url}]}),
     [{index:0,imageUrl:normalizeImageUrl(url)}, {index:1,imageUrl:'https://img.example/2.webp'}]);
+});
+
+test('incomplete or duplicate reader pages fail instead of truncating the chapter',()=>{
+  const page={index:0,image:'https://static.inuko.me/original.jpg?signature=keep'};
+  for(const pages of [null,[page,{index:1}],[page,page],[null],[{...page,image:'javascript:bad'}]]){
+    assert.throws(()=>parsePages({pages}),{code:'parse_error'});
+  }
 });
 test('filters preserve keys, order, options and tri-state category', () => {
   const filters = parseFilters([{slug:'action',name:'Боевик',kind:'GENRE'}]);

@@ -1,7 +1,7 @@
 import {chapter, compareText, filter, isoDate, manga, parseError, record, records, string} from '../core/data.mjs';
-import {requireArray,requireRecord} from '../core/http.mjs';
+export {normalizeImageUrl,parsePages} from '../engines/inuko_images.mjs';
 
-const sorts = [['viewsCount','Популярные'],['likesCount','Лайки'],['chaptersCount','Количество глав'],['bookmarksCount','Закладки'],['averageRating','Высокий рейтинг'],['createdAt','Новые']];
+const sorts = [['viewsCount','Популярные'],['likesCount','Лайки'],['chaptersCount','Количество глав'],['bookmarksCount','Закладки'],['averageRating','Высокий рейтинг'],['createdAt','Новые'],['latestChapterAt','Последние обновления']];
 const choices = [
   ['status','Статус',[['ONGOING','Выходит'],['DONE','Завершено'],['FROZEN','Заморожено'],['ANNOUNCE','Анонс']]],
   ['country','Страна',[['RUSSIA','Россия'],['JAPAN','Япония'],['KOREA','Корея'],['CHINA','Китай'],['OTHER','Другое']]],
@@ -41,22 +41,6 @@ export function catalogQuery({page=1,searchTerm='',selectedFilters={}}={},forced
   return query;
 }
 
-export function parseListing(input) {
-  const seen=new Set();
-  return requireArray(input,'PureManga catalog cards').map(row=>{
-    const id=string(row.path),image=record(row.image),title=string(image.alt),src=string(image.src);
-    if(!id||!/^\/content\/[^/?#]+$/u.test(id)||!title||!src)throw parseError('PureManga catalog card is incomplete.');
-    const cover=new URL(src);
-    if(cover.protocol!=='https:')throw parseError('Invalid PureManga catalog cover.');
-    if(cover.hostname==='static.inuko.me'&&cover.pathname.startsWith('/book/')) {
-      cover.searchParams.delete('width');cover.searchParams.delete('type');
-    }
-    const rating=Number.parseFloat(row.rating);
-    return manga({id,title,coverUrl:cover.href,rating:Number.isFinite(rating)?rating:null,
-      releaseYear:(Array.isArray(row.metadata)?row.metadata:[]).map(value=>String(value).match(/\b(?:19|20|21)\d{2}\b/u)?.[0]).find(Boolean)??null});
-  }).filter(item=>{if(seen.has(item.id))return false;seen.add(item.id);return true;});
-}
-
 export function parseManga(value) {
   const item = record(value), names = record(item.name);
   const slug = string(item.slug), title = string(names.ru ?? names.en ?? names.original);
@@ -72,9 +56,6 @@ export function parseManga(value) {
     releaseYear: item.year == null ? null : String(item.year),
     tags: records(item.labels).map(label => string(label.name)).filter(value => value !== null)});
 }
-
-export const parseCatalog = value => records(value).map(item =>
-  parseManga(item.book && typeof item.book === 'object' ? record(item.book) : item));
 
 export function largestBranch(payload) {
   const branches = new Map();
@@ -96,25 +77,6 @@ export function parseChapters(payload, mangaId) {
     id: `${mangaId}/${string(item.id)}`,
     title: `${Number(item.volume) > 0 ? `Том ${item.volume}. ` : ''}Глава ${item.number}${string(item.title ?? item.name) ? `: ${string(item.title ?? item.name)}` : ''}`,
     number: item.number, uploadedAt: isoDate(item.createdAt)}));
-}
-
-export function normalizeImageUrl(value) {
-  const url = new URL(value);
-  if (url.hostname !== 'static.inuko.me') return value;
-  const segments = url.pathname.split('/'), name = segments.at(-1), stem = name.split('.')[0];
-  if (stem.length !== 36 || stem[14] !== 's') return value;
-  segments[segments.length - 1] = `${stem.slice(0, 14)}x${stem.slice(15)}.${name.split('.').at(-1)}`;
-  url.pathname = segments.join('/');
-  return url.href;
-}
-
-export function parsePages(payload) {
-  const values = requireArray(requireRecord(payload,'PureManga reader').pages,'PureManga pages');
-  return values.slice().sort((a,b)=>Number(a.index)-Number(b.index)).map((item,index)=>{
-    const value=string(item.image);
-    if (!value || !/^https:\/\//u.test(value) || !Number.isInteger(item.index) || item.index < 0) throw parseError('Invalid PureManga reader page.');
-    return {index,imageUrl:normalizeImageUrl(value)};
-  });
 }
 
 export function parseFilters(payload) {

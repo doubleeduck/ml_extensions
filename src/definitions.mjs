@@ -113,10 +113,10 @@ const senkuro = () => {
     template:'/manga/{id}',idPart:{separator:',,',index:1}});
 };
 export const registrations = [
-  source('ru.puremanga','PureManga','v1.puremanga.me','sources/puremanga.mjs',{engine:'Inuko API/HTML JS',custom:true,refresh:true,recommendations:true,
-    origins:['https://api.inuko.me'],images:['https://static.inuko.me'],template:'/{id}',encoding:'path',bindings:{tags:'genre'},parameters:{apiBaseUrl:'https://api.inuko.me/v2/',serviceName:'puremanga.me'},
+  source('ru.puremanga','PureManga','v1.puremanga.me','sources/puremanga.mjs',{engine:'Inuko SSR JS',custom:true,refresh:true,recommendations:true,
+    images:['https://static.inuko.me'],template:'/{id}',encoding:'path',bindings:{tags:'genre'},
     network:{transportProfile:'host.platform.v1'},auth:{profileId:'host.cookie.v1',loginUrl:'https://v1.puremanga.me/',
-      cookieOrigins:['https://v1.puremanga.me','https://puremanga.me','https://sso.inuko.me','https://inuko.me','https://api.inuko.me'],rules:{cookieAll:['__otaku_session']},sessionExport:{headers:['Cookie'],values:[]}},
+      cookieOrigins:['https://v1.puremanga.me','https://puremanga.me','https://sso.inuko.me','https://inuko.me'],rules:{cookieAll:['__otaku_session']},sessionExport:{headers:['Cookie'],values:[]}},
     media:{transform:{algorithm:'xor',origin:'https://static.inuko.me',pathPrefix:'/chapters/',stemLength:36,markerOffset:14,marker:'x',key:[85,121,83,107,112,48,66,122,80,104,119,108,118,80,50,86]}}}),
   source('ru.astramanga','AstraManga','astramanga.org','sources/astramanga.mjs',{engine:'AstraManga API/SSR JS',custom:true,refresh:true,recommendations:true,
     origins:['https://api.astramanga.org'],images:['https://img.astramanga.org'],parameters:{apiBaseUrl:'https://api.astramanga.org'},template:'/manga/{id}',bindings:{tags:'genres'},
@@ -125,8 +125,10 @@ export const registrations = [
     images:['https://img.com-x.life','https://rus.com-x.life'],template:'/{id}-manga.html',bindings:{tags:'g',author:'a',artist:'artist'},network:{transportProfile:'host.platform.v1'},
     auth:{profileId:'host.cookie.v1',loginUrl:'https://com-x.life/',cookieOrigins:['https://com-x.life','https://img.com-x.life','https://rus.com-x.life'],rules:{cookieAll:['dle_user_id','dle_password']},sessionExport:{headers:['Cookie'],values:[]}},
     settings:{version:1,fields:[enumSetting('imageServer','Сервер изображений',[['auto','Автоматически'],['global','Основной'],['ru','Для России']],'auto')]}}),
-  source('ru.inkstory','InkStory','inkstory.net','sources/inkstory.mjs',{engine:'InkStory API/HTML JS',custom:true,refresh:true,recommendations:true,
-    template:'/{id}',encoding:'path',origins:['https://api.inuko.me'],images:['https://inuko.me','https://inkstory.net'],bindings:{tags:'genre'},media:{transform:{algorithm:'xor',origin:'https://static.inuko.me',pathPrefix:'/chapters/',stemLength:36,markerOffset:14,marker:'x',key:[85,121,83,107,112,48,66,122,80,104,119,108,118,80,50,86]}}}),
+  source('ru.inkstory','InkStory','inkstory.net','sources/inkstory.mjs',{engine:'Inuko SSR JS',custom:true,refresh:true,recommendations:true,
+    template:'/{id}',encoding:'path',images:['https://static.inuko.me'],bindings:{tags:'genre'},network:{transportProfile:'host.platform.v1'},
+    auth:{profileId:'host.cookie.v1',loginUrl:'https://inkstory.net/',cookieOrigins:['https://inkstory.net','https://sso.inuko.me','https://inuko.me'],rules:{cookieAll:['__otaku_session']},sessionExport:{headers:['Cookie'],values:[]}},
+    media:{transform:{algorithm:'xor',origin:'https://static.inuko.me',pathPrefix:'/chapters/',stemLength:36,markerOffset:14,marker:'x',key:[85,121,83,107,112,48,66,122,80,104,119,108,118,80,50,86]}}}),
   libgroup('ru.mangalib','MangaLib','mangalib.me',1),
   source('ru.remanga','ReManga','remanga.org','sources/remanga.mjs',{engine:'ReManga API JS',custom:true,refresh:true,recommendations:true,
     parameters:{apiBaseUrl:'https://api.remanga.org'},origins:['https://api.remanga.org'],images:['https://reimg.org','https://reimg2.org'],
