@@ -37,10 +37,11 @@ To add a source to an existing bundle, add its module under `src/sources/` or a 
 
 | Repository | Content | Existing extensionId | Default archive | GitHub environment |
 | --- | --- | --- | --- | --- |
+| `official_ml_extensions` | Official project package | `official.mangalaunch.core.sources` | `official.mangalaunch.core.sources.mlsource` | `official-core-source-release` |
 | `ml_extensions` | Non-NSFW sources | `official.mangalaunch.sources` | `official.mangalaunch.sources.mlsource` | `official-source-release` |
 | `nsfw_ml_extensions` | NSFW sources | `official.mangalaunch.nsfw.sources` | `official.mangalaunch.nsfw.sources.mlsource` | `official-nsfw-source-release` |
 
-The display name of these packages is **Unofficial Extensions**. Existing technical IDs and archive names are retained for updates. For a new independent package, choose your own unique `extensionId`, publisher key and source IDs; do not use someone else's namespace. Publish NSFW sources in the separate appropriate package and mark them `isNsfw: true`.
+The official project package is named **Official Extensions**; the two independent packages are named **Unofficial Extensions** and **Unofficial NSFW Extensions**. Existing technical IDs and archive names are retained for updates. For a new independent package, choose your own unique `extensionId`, publisher key and source IDs; do not use someone else's namespace. Publish NSFW sources in the separate appropriate package and mark them `isNsfw: true`.
 
 Source, manga and chapter IDs must remain stable: the library, history and progress depend on them. A domain change is not an ID change. Do not move an already published sourceId to another package or publisher: uninstalling a package does not release its registered ownership.
 

@@ -37,10 +37,11 @@ my-sources/
 
 | Репозиторий | Содержимое | Существующий extensionId | Архив по умолчанию | GitHub environment |
 | --- | --- | --- | --- | --- |
+| `official_ml_extensions` | Официальный пакет проекта | `official.mangalaunch.core.sources` | `official.mangalaunch.core.sources.mlsource` | `official-core-source-release` |
 | `ml_extensions` | Обычные источники | `official.mangalaunch.sources` | `official.mangalaunch.sources.mlsource` | `official-source-release` |
 | `nsfw_ml_extensions` | NSFW-источники | `official.mangalaunch.nsfw.sources` | `official.mangalaunch.nsfw.sources.mlsource` | `official-nsfw-source-release` |
 
-Название этих пакетов — **Unofficial Extensions**. Существующие технические ID и имена архивов сохраняются для обновлений. Для нового самостоятельного пакета выберите собственный уникальный `extensionId`, ключ издателя и source IDs; не используйте чужой namespace. NSFW-источники публикуйте в соответствующем отдельном пакете и отмечайте `isNsfw: true`.
+Официальный пакет называется **Official Extensions**, два независимых пакета — **Unofficial Extensions** и **Unofficial NSFW Extensions**. Существующие технические ID и имена архивов сохраняются для обновлений. Для нового самостоятельного пакета выберите собственный уникальный `extensionId`, ключ издателя и source IDs; не используйте чужой namespace. NSFW-источники публикуйте в соответствующем отдельном пакете и отмечайте `isNsfw: true`.
 
 ID источников, тайтлов и глав должны быть стабильными: от них зависят библиотека, история и прогресс. Смена домена не означает смену ID. Не передавайте уже опубликованный sourceId другому пакету или издателю: удаление пакета пользователем не освобождает его зарегистрированное владение.
 

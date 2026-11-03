@@ -2,16 +2,21 @@
 const browse = ['browse','latest','search','filters'];
 const origin = host => `https://${host}`;
 const sourceBranding = {
-  "puremanga": {"icon":"assets/source_logos/puremanga.png","accentColor":"#F43F5E"},
-  "astramanga": {"icon":"assets/source_logos/astramanga.png","accentColor":"#8B5CF6"},
-  "comx": {"icon":"assets/source_logos/comx.png","accentColor":"#E5484D"},
+  "puremanga": {
+    "icon": "assets/source_logos/puremanga.png",
+    "accentColor": "#F43F5E"
+  },
+  "astramanga": {
+    "icon": "assets/source_logos/astramanga.png",
+    "accentColor": "#8B5CF6"
+  },
+  "comx": {
+    "icon": "assets/source_logos/comx.png",
+    "accentColor": "#E5484D"
+  },
   "inkstory": {
     "icon": "assets/source_logos/inkstory.png",
     "accentColor": "#2979EF"
-  },
-  "mangadex": {
-    "icon": "assets/source_logos/mangadex.png",
-    "accentColor": "#FF6740"
   },
   "mangalib": {
     "icon": "assets/source_logos/mangalib.png",
@@ -53,37 +58,9 @@ const sourceBranding = {
     "icon": "assets/source_logos/mangafox.png",
     "accentColor": "#F59B42"
   },
-  "mangakakalot": {
-    "icon": "assets/source_logos/mangakakalot.png",
-    "accentColor": "#F48A46"
-  },
-  "weebcentral": {
-    "icon": "assets/source_logos/weebcentral.png",
-    "accentColor": "#4EA2FF"
-  },
-  "mangachan": {
-    "icon": "assets/source_logos/mangachan.png",
-    "accentColor": "#EE6F2D"
-  },
   "mangashi": {
     "icon": "assets/source_logos/mangashi.png",
     "accentColor": "#E5484D"
-  },
-  "desu": {
-    "icon": "assets/source_logos/desu.png",
-    "accentColor": "#176093"
-  },
-  "shikimori": {
-    "icon": "assets/source_logos/shikimori.png",
-    "accentColor": "#4B7FAA"
-  },
-  "anilist": {
-    "icon": "assets/source_logos/anilist.png",
-    "accentColor": "#3DB4F2"
-  },
-  "myanimelist": {
-    "icon": "assets/source_logos/myanimelist.png",
-    "accentColor": "#2E51A2"
   }
 };
 function source(id,name,host,module,extra = {}) {
@@ -135,7 +112,6 @@ const senkuro = () => {
     auth:{...cookieAuth(host,'/'),profileId:'host.session.v1',rules:{bearer:true,tokenStorageKeys:['auth','token','accessToken','access_token'],tokenFields:['access_token','accessToken','token','jwt']},cookieOrigins:[origin(host),origin(api)],sessionExport:{headers:['Cookie','Authorization'],values:['accessToken']}},
     template:'/manga/{id}',idPart:{separator:',,',index:1}});
 };
-const metadata = (id,name,host,module,extra = {}) => source(id,name,host,module,{...extra,metadataOnly:true,recommendations:true,auth:cookieAuth(host,extra.login ?? '/login'),template:extra.template ?? '/manga/{id}'});
 export const registrations = [
   source('ru.puremanga','PureManga','v1.puremanga.me','sources/puremanga.mjs',{engine:'Inuko API/HTML JS',custom:true,refresh:true,recommendations:true,
     origins:['https://api.inuko.me'],images:['https://static.inuko.me'],template:'/{id}',encoding:'path',bindings:{tags:'genre'},parameters:{apiBaseUrl:'https://api.inuko.me/v2/',serviceName:'puremanga.me'},
@@ -151,7 +127,6 @@ export const registrations = [
     settings:{version:1,fields:[enumSetting('imageServer','Сервер изображений',[['auto','Автоматически'],['global','Основной'],['ru','Для России']],'auto')]}}),
   source('ru.inkstory','InkStory','inkstory.net','sources/inkstory.mjs',{engine:'InkStory API/HTML JS',custom:true,refresh:true,recommendations:true,
     template:'/{id}',encoding:'path',origins:['https://api.inuko.me'],images:['https://inuko.me','https://inkstory.net'],bindings:{tags:'genre'},media:{transform:{algorithm:'xor',origin:'https://static.inuko.me',pathPrefix:'/chapters/',stemLength:36,markerOffset:14,marker:'x',key:[85,121,83,107,112,48,66,122,80,104,119,108,118,80,50,86]}}}),
-  ...['ru','en'].map(language => source(`${language}.mangadex`,'MangaDex','mangadex.org','engines/mangadex.mjs',{engine:'MangaDex API JS',recommendations:true,parameters:{translatedLanguage:language},origins:['https://api.mangadex.org'],images:['https://uploads.mangadex.org','https://mangadex.network'],template:'/title/{id}',bindings:{tags:'tags'}})),
   libgroup('ru.mangalib','MangaLib','mangalib.me',1),
   source('ru.remanga','ReManga','remanga.org','sources/remanga.mjs',{engine:'ReManga API JS',custom:true,refresh:true,recommendations:true,
     parameters:{apiBaseUrl:'https://api.remanga.org'},origins:['https://api.remanga.org'],images:['https://reimg.org','https://reimg2.org'],
@@ -160,22 +135,16 @@ export const registrations = [
       rules:{bearer:true,cookieAll:['auth:token'],tokenCookieNames:['auth:token']},sessionExport:{headers:['Cookie','Authorization'],values:[]}},
     settings:{version:1,fields:[enumSetting('branchMode','Ветки перевода',[['main','Основная'],['all','Все ветки']],'main'),
       enumSetting('imageServer','Сервер изображений',[['original','Автоматически'],['primary','Основной'],['reserve','Резервный']],'original')]}}),
-  grouple('ru.readmanga','ReadManga','a.zazaza.me'),grouple('ru.mintmanga','MintManga','2.mintmanga.one'),grouple('ru.seimanga','SeiManga','1.seimanga.me'),
-  grouple('ru.selfmanga','SelfManga','1.selfmanga.live'),grouple('ru.usagi','Usagi','a.zazaza.me'),grouple('ru.rumix','RuMIX','rumix.me'),
+  grouple('ru.readmanga','ReadManga','a.zazaza.me'),
+  grouple('ru.mintmanga','MintManga','2.mintmanga.one'),
+  grouple('ru.seimanga','SeiManga','1.seimanga.me'),
+  grouple('ru.selfmanga','SelfManga','1.selfmanga.live'),
+  grouple('ru.usagi','Usagi','a.zazaza.me'),
+  grouple('ru.rumix','RuMIX','rumix.me'),
   senkuro(),
   source('en.mangafox','MangaFox','fanfox.net','sources/mangafox.mjs',{origins:['https://m.fanfox.net'],images:['https://fanfox.net','https://mangafox.me','https://mangafox.la','https://mfcdn.net'],template:'/manga/{id}/',bindings:{author:'author',artist:'artist',tags:'genres'},
     media:{refererOrigin:'https://m.fanfox.net',userAgentProfile:'mobileSafari'},network:{cookieDefaults:[{origin:'https://fanfox.net',name:'isAdult',value:'1'},{origin:'https://m.fanfox.net',name:'isAdult',value:'1'},{origin:'https://m.fanfox.net',name:'readway',value:'2'}]}}),
-  source('en.mangakakalot','Mangakakalot','www.mangakakalot.gg','sources/mangakakalot.mjs',{engine:'MangaBox HTML/API JS',origins:['https://mangakakalot.gg','https://www.mangakakalove.com','https://mangakakalove.com'],images:['https://2xstorage.com','https://mangakakalot.gg','https://mangakakalove.com','https://manganelo.com','https://manganato.com'],template:'/manga/{id}',
-    // Explicit parent Domain grants for this source's own anti-bot cookies;
-    // no account/raw session export and no shared browser jar.
-    network:{authOrigins:['https://www.mangakakalot.gg','https://mangakakalot.gg','https://www.mangakakalove.com','https://mangakakalove.com']}}),
-  source('en.weebcentral','Weeb Central','weebcentral.com','sources/weebcentral.mjs',{recommendations:true,images:['https://planeptune.us','https://weebcentral.com','https://compsci88.com','https://scans.lastation.us'],template:'/series/{id}',bindings:{author:'author',artist:'author',tags:'tag'}}),
-  source('ru.mangachan','MangaChan','im.manga-chan.me','engines/chan.mjs',{recommendations:true,template:'/{id}',encoding:'path',images:['https://manga-chan.me'],network:{authOrigins:['https://im.manga-chan.me','https://manga-chan.me']},bindings:{tags:'genres'}}),
   source('ru.mangashi','MangaShi','manga-shi.org','sources/mangashi.mjs',{refresh:true,recommendations:true,auth:cookieAuth('manga-shi.org'),template:'/{id}',encoding:'path',images:['https://manga-shi.org'],bindings:{tags:'tags'}}),
-  source('ru.desu','Desu','desu.uno','sources/desu.mjs',{custom:true,refresh:true,recommendations:true,template:'/{id}',encoding:'path',images:['https://desu.uno','https://desu.me'],bindings:{tags:'genres'}}),
-  metadata('ru.shikimori','Shikimori','shikimori.io','sources/shikimori.mjs',{template:'/mangas/{id}',login:'/users/sign_in',images:['https://shikimori.io','https://shikimori.one']}),
-  metadata('en.anilist','AniList','anilist.co','sources/anilist.mjs',{origins:['https://graphql.anilist.co'],images:['https://anilist.co'],login:'/login'}),
-  metadata('en.myanimelist','MyAnimeList','myanimelist.net','sources/myanimelist.mjs',{origins:['https://api.myanimelist.net'],images:['https://myanimelist.net'],login:'/login.php',network:{authOrigins:['https://myanimelist.net','https://api.myanimelist.net']}}),
 ];
 export function sourceDefinitions() { return registrations.map(({_module,...definition}) => definition); }
 export function manifestDefinition({version,publisherKeyId}) {

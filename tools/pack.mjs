@@ -36,7 +36,7 @@ if (args.includes('--generate-key')) {
   const archive = packageZip(new Map([['manifest.json',signed.bytes],['signature.ed25519',signed.signature],...payloads]));
   const manifest = verifyPackage(archive,signed.publicKey);
   const expectedIds = registrations.map(source => source.id).sort(), actualIds = manifest.sources.map(source => source.id).sort();
-  if (new Set(actualIds).size !== actualIds.length || JSON.stringify(actualIds) !== JSON.stringify(expectedIds)) throw Error('Official bundle must preserve every registered source ID.');
+  if (new Set(actualIds).size !== actualIds.length || JSON.stringify(actualIds) !== JSON.stringify(expectedIds)) throw Error('Package must preserve every registered source ID.');
   await mkdir(path.dirname(path.resolve(output)),{recursive:true}); await writeFile(output,archive);
   await writeFile(`${output}.public.json`,JSON.stringify({keyId,publicKey:signed.publicKey.toString('base64'),extensionIds:[manifest.extensionId],sourceIds:manifest.sources.map(source => source.id)},null,2)+'\n');
   await writeFile(`${output}.sha256`,`${createHash('sha256').update(archive).digest('hex')}  ${path.basename(output)}\n`);
