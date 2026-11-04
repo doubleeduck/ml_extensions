@@ -5,9 +5,9 @@ import {readFile,readdir} from 'node:fs/promises';
 import {registrations,sourceDefinitions,manifestDefinition} from '../src/definitions.mjs';
 import createSource from '../src/index.mjs';
 import {canonicalJson,packageZip,signedManifest,verifyPackage} from '../tools/package_format.mjs';
-test('unofficial package registers 15 standard IDs and its offline factories never perform IO', () => {
-  assert.equal(registrations.length,15); assert.equal(new Set(registrations.map(source => source.id)).size,15);
-  assert.deepEqual(registrations.map(source => source.id),["ru.puremanga","ru.astramanga","ru.comx","ru.inkstory","ru.mangalib","ru.remanga","ru.readmanga","ru.mintmanga","ru.seimanga","ru.selfmanga","ru.usagi","ru.rumix","ru.senkuro","en.mangafox","ru.mangashi"]);
+test('unofficial package registers 14 standard IDs and its offline factories never perform IO', () => {
+  assert.equal(registrations.length,14); assert.equal(new Set(registrations.map(source => source.id)).size,14);
+  assert.deepEqual(registrations.map(source => source.id),["ru.puremanga","ru.astramanga","ru.comx","ru.inkstory","ru.mangalib","ru.remanga","ru.readmanga","ru.mintmanga","ru.seimanga","ru.selfmanga","ru.usagi","ru.rumix","ru.senkuro","ru.mangashi"]);
   assert.ok(registrations.every(source => source.isNsfw === false));
   assert.equal(manifestDefinition({version:'1.0.0',publisherKeyId:'fixture'}).extensionId,'official.mangalaunch.sources');
   assert.match(manifestDefinition({version:'1.0.0',publisherKeyId:'fixture'}).name,/Unofficial Extensions/);
@@ -25,7 +25,7 @@ test('unofficial ZIP/signature payload is reproducible and rejects tampering ind
   for (const definition of registrations) payload.set(definition.branding.icon,Buffer.from('Fixture image bytes'));
   const signed = signedManifest(manifestDefinition({version:'1.0.0',publisherKeyId:'test-generated'}),payload,pem);
   const files = new Map([['manifest.json',signed.bytes],['signature.ed25519',signed.signature],...payload]), first = packageZip(files), second = packageZip(new Map([...files].reverse()));
-  assert.deepEqual(first,second); assert.equal(verifyPackage(first,signed.publicKey).sources.length,15);
+  assert.deepEqual(first,second); assert.equal(verifyPackage(first,signed.publicKey).sources.length,14);
   const corrupt = Buffer.from(first); corrupt[40] ^= 1; assert.throws(() => verifyPackage(corrupt,signed.publicKey));
   assert.equal(canonicalJson({z:1,a:{b:2,a:3}}),'{"a":{"a":3,"b":2},"z":1}');
 });

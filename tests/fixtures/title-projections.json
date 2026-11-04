@@ -32,13 +32,6 @@
     "html": "<div class=\"name_row\"><h1><a>Fixture</a></h1></div><table class=\"table_cha\"><tr><td><a href=\"/online/fixture/1.html\">Глава 1</a></td></tr></table>"
   },
   {
-    "sourceId": "en.mangafox",
-    "mangaId": "fixture",
-    "title": "Fixture",
-    "chapterCount": 1,
-    "html": "<div class=\"detail-info-right\"><h1>Fixture</h1></div><ul class=\"detail-main-list\"><li><a href=\"/manga/fixture/c001/1.html\"><span class=\"title3\">Chapter 1</span></a></li></ul>"
-  },
-  {
     "sourceId": "ru.desu",
     "mangaId": "/manga/fixture.123/",
     "title": "Fixture",

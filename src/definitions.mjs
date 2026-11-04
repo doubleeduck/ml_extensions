@@ -54,10 +54,6 @@ const sourceBranding = {
     "icon": "assets/source_logos/senkuro.png",
     "accentColor": "#6A8AF6"
   },
-  "mangafox": {
-    "icon": "assets/source_logos/mangafox.png",
-    "accentColor": "#F59B42"
-  },
   "mangashi": {
     "icon": "assets/source_logos/mangashi.png",
     "accentColor": "#E5484D"
@@ -144,8 +140,6 @@ export const registrations = [
   grouple('ru.usagi','Usagi','a.zazaza.me'),
   grouple('ru.rumix','RuMIX','rumix.me'),
   senkuro(),
-  source('en.mangafox','MangaFox','fanfox.net','sources/mangafox.mjs',{origins:['https://m.fanfox.net'],images:['https://fanfox.net','https://mangafox.me','https://mangafox.la','https://mfcdn.net'],template:'/manga/{id}/',bindings:{author:'author',artist:'artist',tags:'genres'},
-    media:{refererOrigin:'https://m.fanfox.net',userAgentProfile:'mobileSafari'},network:{cookieDefaults:[{origin:'https://fanfox.net',name:'isAdult',value:'1'},{origin:'https://m.fanfox.net',name:'isAdult',value:'1'},{origin:'https://m.fanfox.net',name:'readway',value:'2'}]}}),
   source('ru.mangashi','MangaShi','manga-shi.org','sources/mangashi.mjs',{refresh:true,recommendations:true,auth:cookieAuth('manga-shi.org'),template:'/{id}',encoding:'path',images:['https://manga-shi.org'],bindings:{tags:'tags'}}),
 ];
 export function sourceDefinitions() { return registrations.map(({_module,...definition}) => definition); }

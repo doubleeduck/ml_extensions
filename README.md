@@ -1,6 +1,6 @@
 # MangaLaunch Unofficial Extensions
 
-Неофициальное расширение MangaLaunch: подписанный пакет **15 обычных источников** для MangaLaunch.
+Неофициальное расширение MangaLaunch: подписанный пакет **14 обычных источников** для MangaLaunch.
 
 ## Источники
 
@@ -17,7 +17,6 @@
 - **Usagi** — `ru.usagi`
 - **RuMIX** — `ru.rumix`
 - **Senkuro** — `ru.senkuro`
-- **MangaFox** — `en.mangafox`
 - **MangaShi** — `ru.mangashi`
 
 Технические extensionId, имена архивов, publisher KeyId и GitHub environment

@@ -6,7 +6,6 @@ import createLibGroup from './engines/libgroup.mjs';
 import createRemanga from './sources/remanga.mjs';
 import createGrouple from './engines/grouple.mjs';
 import createSenkuro from './engines/senkuro.mjs';
-import createMangaFox from './sources/mangafox.mjs';
 import createMangaShi from './sources/mangashi.mjs';
 
 const factories = new Map([
@@ -23,7 +22,6 @@ const factories = new Map([
   ['ru.usagi',createGrouple],
   ['ru.rumix',createGrouple],
   ['ru.senkuro',createSenkuro],
-  ['en.mangafox',createMangaFox],
   ['ru.mangashi',createMangaShi],
 ]);
 export default function createSource(context) {
