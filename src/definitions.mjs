@@ -80,7 +80,7 @@ const libApis = ['api.cdnlibs.org','api2.mangalib.me','hapi.hentaicdn.org','api.
 // Cookie Domain roots are explicit grants, not shared cookie jars. Every
 // instance still receives only the browser/HTTP session belonging to its ID.
 const libCookieRoots = ['cdnlibs.org','mangalib.me','hentaicdn.org','imglib.info'].map(origin);
-const libImages = ['mixlib.me','imglib.info','mangalib.me','hentaicdn.org','cdnlib.org','cdnlibs.org','mangalib.org','mangalib.net'].map(origin);
+const libImages = ['mixlib.me','imglib.info','mangalib.me','hentaicdn.org','cdnlib.org','cdnlibs.org','mangalib.org','mangalib.net','lib.social'].map(origin);
 const enumSetting = (key,label,options,value) => ({key,label,type:'enum',default:value,options:options.map(([value,label]) => ({value,label}))});
 const titleLanguage = enumSetting('titleLanguage','Язык названия',[['eng','Английский'],['rus','Русский']],'eng');
 const libSettings = {version:1,legacyNamespace:'libgroup',roles:{titleLanguage:'titleLanguage'},fields:[titleLanguage,
@@ -92,14 +92,14 @@ const libgroup = (id,name,host,siteId,nsfw = false) => source(id,name,host,'engi
   parameters:{siteId:String(siteId)},settings:libSettings,origins:libApis,images:libImages,
   auth:{...cookieAuth(host,'/ru'),profileId:'host.session.v1',rules:{bearer:true,cookieAll:['XSRF-TOKEN','mangalib_session','remember_web_*'],tokenStorageKeys:['auth'],tokenPath:['token','access_token'],tokenTypePath:['token','token_type'],tokenType:'bearer'},cookieOrigins:[...new Set([origin(host),...libApis,...libCookieRoots])],sessionExport:{headers:['Cookie','Authorization','X-XSRF-TOKEN'],values:['accessToken','csrfToken']}},
   template:'/ru/manga/{id}',bindings:{author:'authors',artist:'artists',tags:'tags'},media:{sendOrigin:true}});
-const groupleCookieRoots = {'a.zazaza.me':'zazaza.me','2.mintmanga.one':'mintmanga.one','1.seimanga.me':'seimanga.me','1.selfmanga.live':'selfmanga.live'};
+const groupleCookieRoots = {'b.zazaza.me':'zazaza.me','2.mintmanga.one':'mintmanga.one','1.seimanga.me':'seimanga.me','1.selfmanga.live':'selfmanga.live'};
 const grouple = (id,name,host,nsfw = false) => {
   const authOrigin = 'https://3.grouple.co';
   const login = new URL('/internal/auth/login',authOrigin);
   return source(id,name,host,'engines/grouple.mjs',{engine:'GroupLe JS',nsfw,custom:true,refresh:true,recommendations:true,
   template:'/{id}',encoding:'path',settings:{version:1,legacyNamespace:'libgroup',roles:{titleLanguage:'titleLanguage'},fields:[titleLanguage]},
-  auth:{...cookieAuth(host),profileId:'host.session.v1',rules:{cookieAll:['remember_me'],tokenStorageKeys:['gwt']},loginUrl:login.href,cookieOrigins:[origin(host),...(groupleCookieRoots[host] ? [origin(groupleCookieRoots[host])] : []),authOrigin,'https://grouple.co'],completionUrl:origin(host),successUrl:`${authOrigin}/`,sessionExport:{headers:['Cookie'],values:[]}},
-  origins:[authOrigin],images:['https://one-way.work','https://manga1.ru','https://manga2.ru','https://manga3.ru','https://mangap.ru','https://mangapoisk.org','https://readmanga.io'],media:{sendOrigin:true}});
+  auth:{...cookieAuth(host),profileId:'host.session.v1',rules:{cookieAll:['remember_me'],tokenStorageKeys:['gwt']},loginUrl:login.href,cookieOrigins:[origin(host),...(groupleCookieRoots[host] ? [origin(groupleCookieRoots[host])] : []),...(host === 'b.zazaza.me' ? ['https://a.zazaza.me'] : []),authOrigin,'https://grouple.co'],completionUrl:origin(host),successUrl:`${authOrigin}/`,sessionExport:{headers:['Cookie'],values:[]}},
+  origins:[authOrigin,...(host === 'b.zazaza.me' ? ['https://zazaza.me'] : [])],images:[...(host === 'b.zazaza.me' ? ['https://zazaza.me'] : []),'https://one-way.work','https://manga1.ru','https://manga2.ru','https://manga3.ru','https://mangap.ru','https://mangapoisk.org','https://readmanga.io'],media:{sendOrigin:true}});
 };
 const senkuro = () => {
   const host = 'senkuro.me', api = 'api.senkuro.me';
@@ -133,11 +133,11 @@ export const registrations = [
       rules:{bearer:true,cookieAll:['auth:token'],tokenCookieNames:['auth:token']},sessionExport:{headers:['Cookie','Authorization'],values:[]}},
     settings:{version:1,fields:[enumSetting('branchMode','Ветки перевода',[['main','Основная'],['all','Все ветки']],'main'),
       enumSetting('imageServer','Сервер изображений',[['original','Автоматически'],['primary','Основной'],['reserve','Резервный']],'original')]}}),
-  grouple('ru.readmanga','ReadManga','a.zazaza.me'),
+  grouple('ru.readmanga','ReadManga','b.zazaza.me'),
   grouple('ru.mintmanga','MintManga','2.mintmanga.one'),
   grouple('ru.seimanga','SeiManga','1.seimanga.me'),
   grouple('ru.selfmanga','SelfManga','1.selfmanga.live'),
-  grouple('ru.usagi','Usagi','a.zazaza.me'),
+  grouple('ru.usagi','Usagi','b.zazaza.me'),
   grouple('ru.rumix','RuMIX','rumix.me'),
   senkuro(),
   source('ru.mangashi','MangaShi','manga-shi.org','sources/mangashi.mjs',{refresh:true,recommendations:true,auth:cookieAuth('manga-shi.org'),template:'/{id}',encoding:'path',images:['https://manga-shi.org'],bindings:{tags:'tags'}}),

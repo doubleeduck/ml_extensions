@@ -22,3 +22,14 @@ test('GroupLe reader parses both init markers, static hosts, one-way signatures 
     {index:0,imageUrl:'https://a.zazaza.me/static/1.jpg'},{index:1,imageUrl:'https://h.example/path/2.jpg'},{index:2,imageUrl:'https://one-way.work/path/3.jpg'}]);
   assert.deepEqual(parseReader('alert("do not execute")','https://a.zazaza.me'),[]);
 });
+test('ReadManga and Usagi permit the active host and future zazaza mirrors', () => {
+  for (const id of ['ru.readmanga','ru.usagi']) {
+    const source=sourceDefinitions().find(item=>item.id===id);
+    assert.equal(source.baseUrl,'https://b.zazaza.me');
+    assert.ok(source.network.origins.includes('https://zazaza.me'));
+    assert.ok(source.network.imageOrigins.includes('https://zazaza.me'));
+    assert.equal(source.network.allowSubdomains,true);
+    assert.ok(source.network.authOrigins.includes('https://a.zazaza.me'));
+    assert.ok(source.network.authOrigins.includes('https://b.zazaza.me'));
+  }
+});
