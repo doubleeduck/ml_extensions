@@ -18,6 +18,8 @@ export interface MangaDto {
   secondaryTitle:string|null; author:string|null; artist:string|null;
   status:string|null; type:string|null; ageRating:string|null; rating:number|null;
   releaseYear:string|null; pageCount:number|null; languageFlagUrl:string|null; tags:string[];
+  /** Language of available pages (BCP 47); null when unknown or mixed. */
+  languageCode?:string|null;
 }
 export interface ChapterAccessDto {
   type:'available'|'temporarilyUnavailable'|'paid'; availableAt:string|null;

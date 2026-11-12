@@ -33,6 +33,39 @@ test('Com-X listing prefers real lazy covers, preserves full title, deduplicates
 test('Com-X details strip definition labels, retain original/full cover and read only the explicit recommendation block',()=>{
   const result=parseDetails(details,base);assert.equal(result.info.author,'Writer');assert.equal(result.info.releaseYear,'2026');assert.equal(result.info.rating,9);assert.equal(result.info.coverUrl,`${base}/cover-full.jpg`);assert.deepEqual(result.recommendations.map(r=>r.id),['8']);
 });
+test('Com-X converts starter thumbnails to their original cover and validates ratings',()=>{
+  const image={lazy:'https://rus.com-x.life/uploads/mini/starter/2022-02/3.png.webp'};
+  const result=parseListing([{...row,image,rating:'4.5'},{...row,link:'/8-other.html',rating:'80 1 2 3 4 5'}],base);
+  assert.equal(result[0].coverUrl,'https://com-x.life/uploads/posts/2022-02/3.png');
+  assert.equal(result[0].rating,9);
+  assert.equal(result[1].rating,null);
+  assert.equal(parseDetails({...details,rating:'80 1 2 3 4 5 2201'},base).info.rating,null);
+  assert.equal(parseDetails({...details,rating:'4,5 2201'},base).info.rating,9);
+});
+test('Com-X resolves hashed catalog covers using title pages and tolerates individual failures',async()=>{
+  const hash='https://rus.com-x.life/uploads/mini/mid/25/d9e13240feb063d87c24da930cff86.webp';
+  let active=0,maxActive=0;
+  const calls=[];
+  const source=createComX({baseUrl:base,http:{request:async input=>{
+    calls.push(input.url);
+    if (input.method==='POST') return {body:'catalog',url:input.url};
+    active++;maxActive=Math.max(maxActive,active);
+    await new Promise(resolve=>setTimeout(resolve,5));active--;
+    if (input.url.includes('/8-')) throw Object.assign(Error('unavailable'),{code:'not_found'});
+    return {body:input.url,url:input.url};
+  }},html:{extract:async(body,projection)=>{
+    if (projection.selector?.startsWith('#dle-content')) return [7,8,9,10].map(id=>({...row,link:`/${id}-name.html`,image:{lazy:hash}}));
+    assert.equal(projection.fields.rating.selector,'.page__activity-col--rates .page__activity-votes');
+    const id=Number(/\/(\d+)-manga\.html/u.exec(body)[1]);
+    return {...details,image:{src:`/uploads/posts/${id}.jpg`},scripts:[dataScript({...chapter,news_id:id})],recommendations:[]};
+  }}});
+  const values=await source.getLatest();
+  assert.deepEqual(values.map(value=>value.coverUrl),[`${base}/uploads/posts/7.jpg`,hash,`${base}/uploads/posts/9.jpg`,`${base}/uploads/posts/10.jpg`]);
+  assert.equal(values[0].rating,9);
+  assert.equal(values[1].rating,null);
+  assert.equal(maxActive,3);
+  assert.equal(calls.length,5);
+});
 test('Com-X consumes the complete embedded chapter list, including fractional numbers, without per-chapter requests',()=>{
   const values=parseChapters({...chapter,limit:1},'7');assert.deepEqual(values.map(c=>c.id),['7/100','7/99']);assert.equal(values[0].number,1.5);assert.equal(values[1].uploadedAt,'2026-10-27T00:00:00.000Z');assert.throws(()=>parseChapters(chapter,'8'),e=>e.code==='parse_error');
 });

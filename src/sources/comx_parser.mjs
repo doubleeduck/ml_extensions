@@ -23,6 +23,19 @@ const picture = (input,base) => {
   }
   return null;
 };
+function listingCover(input,base) {
+  const cover = picture(input,base);
+  if (!cover) return null;
+  const url = new URL(cover);
+  const path = /^\/uploads\/mini\/starter\/(.+\.(?:jpe?g|png|gif|webp))\.webp$/iu.exec(url.pathname);
+  return path ? new URL(`/uploads/posts/${path[1]}`,base).href : cover;
+}
+function ratingValue(value) {
+  const text = normalizeText(value);
+  const match = /^([0-5](?:[.,]\d+)?)(?:\s|$)/u.exec(text);
+  const rating = match ? Number(match[1].replace(',','.')) : NaN;
+  return Number.isFinite(rating) && rating <= 5 ? rating * 2 : null;
+}
 function names(raw) {
   const parts = normalizeText(raw).split(' / '), last = parts.at(-1);
   return parts.length > 1 && /[а-яё]/iu.test(last) ? {title:last,secondaryTitle:parts.slice(0,-1).join(' / ')} : {title:parts.join(' / '),secondaryTitle:null};
@@ -32,11 +45,10 @@ export function parseListing(input,base,exclude=null) {
   for (const row of requireArray(input,'Com-X listing')) {
     let id; try {id = titleId(row.href ?? row.link);} catch {continue;}
     if (seen.has(id)) continue;
-    const value = names(string(row.title) ?? record(row.image).alt), coverUrl = picture(row.image,base);
+    const value = names(string(row.title) ?? record(row.image).alt), coverUrl = listingCover(row.image,base);
     if (!value.title || !coverUrl) continue;
     seen.add(id);
-    const rating = Number.parseFloat(normalizeText(row.rating).replace(',','.'));
-    result.push(manga({id,...value,coverUrl,rating:Number.isFinite(rating) ? rating*2 : null,
+    result.push(manga({id,...value,coverUrl,rating:ratingValue(row.rating),
       releaseYear:(row.metadata ?? []).map(normalizeText).find(value=>/^(?:19|20)\d{2}$/u.test(value)) ?? null}));
   }
   return result;
@@ -49,11 +61,10 @@ export function parseDetails(input,base) {
     const label = normalizeText(row.label), text = normalizeText(row.value);
     return [label.replace(/:$/u,'').toLowerCase(),text.startsWith(label) ? text.slice(label.length).replace(/^:\s*/u,'').trim() : text];
   }));
-  const rating = Number.parseFloat(normalizeText(data.rating).replace(',','.'));
   return {info:manga({id,...value,secondaryTitle:string(data.secondaryTitle) ?? value.secondaryTitle,coverUrl:picture(data.image,base),
     description:string(data.description),author:string(metadata.автор),artist:string(metadata.художник),status:string(metadata.статус),
     releaseYear:string(metadata.год),tags:[...new Set(requireArray(data.tags,'Com-X genres').map(normalizeText).filter(Boolean))],
-    rating:Number.isFinite(rating) ? rating*2 : null}),chapters:raw,recommendations:parseListing(data.recommendations ?? [],base,id)};
+    rating:ratingValue(data.rating)}),chapters:raw,recommendations:parseListing(data.recommendations ?? [],base,id)};
 }
 export function parseChapters(data,expectedId) {
   if (titleId(data.news_id) !== titleId(expectedId)) throw parseError('Com-X returned another title.');

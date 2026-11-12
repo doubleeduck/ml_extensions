@@ -7,7 +7,7 @@ const item = {fields:{href:{attr:'href'},link:{selector:'a[href*=".html"]',attr:
   image:{selector:'img',fields:{src:{attr:'src'},lazy:{attr:'data-src'},alt:{attr:'alt'}}},rating:{selector:'.poster__label--rate',text:true},metadata:{selector:'.readed__meta-item',all:true,text:true}}};
 const scripts = {selector:'script:not([src])',all:true,text:true,normalizeWhitespace:false};
 const details = {fields:{title:{selector:'.page__header h1',text:true},secondaryTitle:{selector:'.page__title-original',text:true},description:{selector:'.page__text',text:true},
-  image:{selector:'.page__poster img',fields:{src:{attr:'src'},lazy:{attr:'data-src'}}},rating:{selector:'.page__rating',text:true},
+  image:{selector:'.page__poster img',fields:{src:{attr:'src'},lazy:{attr:'data-src'}}},rating:{selector:'.page__activity-col--rates .page__activity-votes',text:true},
   metadata:{selector:'.page__list li',all:true,fields:{label:{selector:'div',text:true},value:{text:true}}},tags:{selector:'.page__tags a',all:true,text:true},
   scripts,recommendations:{...item,selector:'#rec-similar a.poster',all:true}}};
 export function isChallenge(body,url='') {
@@ -40,11 +40,26 @@ export default function createComX(ctx) {
     return data;
   });
   let filters = null;
+  async function fullCovers(items) {
+    const pending = items.filter(item=>/\/uploads\/mini\/mid\//u.test(new URL(item.coverUrl).pathname));
+    for (let start=0;start<pending.length;start+=3) {
+      await Promise.all(pending.slice(start,start+3).map(async item=>{
+        try {
+          const info = (await title(item.id)).info;
+          if (info.coverUrl) item.coverUrl = info.coverUrl;
+          if (item.rating == null && info.rating != null) item.rating = info.rating;
+        } catch (_) {
+          // Keep the catalog usable if an individual title cannot be opened.
+        }
+      }));
+    }
+    return items;
+  }
   async function catalog(query,sort) {
     try {
       const response = await request(catalogRequest(base,query,sort));
       const rows = await ctx.html.extract(response.body,{...item,baseUrl:response.url,selector:'#dle-content .short, #dle-content a.poster',all:true});
-      return parseListing(rows,base);
+      return fullCovers(parseListing(rows,base));
     } catch(error) {
       if (Number(query?.page) > 1 && error.code === 'not_found') return [];
       throw error;
@@ -72,7 +87,7 @@ export default function createComX(ctx) {
     },
     async getRecommendations({mangaId,page=1}) {
       const currentPage=Math.max(1,Math.trunc(page)||1);
-      return {items:currentPage === 1 ? (await title(titleId(mangaId))).recommendations : [],page:currentPage,hasNextPage:false};
+      return {items:currentPage === 1 ? await fullCovers((await title(titleId(mangaId))).recommendations) : [],page:currentPage,hasNextPage:false};
     },
   };
 }
