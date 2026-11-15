@@ -80,7 +80,7 @@ const libApis = ['api.cdnlibs.org','api2.mangalib.me','hapi.hentaicdn.org','api.
 // Cookie Domain roots are explicit grants, not shared cookie jars. Every
 // instance still receives only the browser/HTTP session belonging to its ID.
 const libCookieRoots = ['cdnlibs.org','mangalib.me','hentaicdn.org','imglib.info'].map(origin);
-const libImages = ['mixlib.me','imglib.info','mangalib.me','hentaicdn.org','cdnlib.org','cdnlibs.org','mangalib.org','mangalib.net','lib.social'].map(origin);
+const libImages = ['mixlib.me','imglib.info','mangalib.me', 'cdnrulib.link','hentaicdn.org','cdnlib.org','cdnlibs.org','mangalib.org','mangalib.net','lib.social'].map(origin);
 const enumSetting = (key,label,options,value) => ({key,label,type:'enum',default:value,options:options.map(([value,label]) => ({value,label}))});
 const titleLanguage = enumSetting('titleLanguage','Язык названия',[['eng','Английский'],['rus','Русский']],'eng');
 const libSettings = {version:1,legacyNamespace:'libgroup',roles:{titleLanguage:'titleLanguage'},fields:[titleLanguage,
