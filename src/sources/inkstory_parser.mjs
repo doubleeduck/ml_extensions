@@ -1,4 +1,5 @@
 import {chapter, compareText, filter, isoDate, manga, parseError, record, records, string} from '../core/data.mjs';
+import {inukoSorts} from '../engines/inuko_sorts.mjs';
 export {normalizeImageUrl,parsePages} from '../engines/inuko_images.mjs';
 
 export function parseManga(value) {
@@ -51,9 +52,7 @@ export function parseFilters(payload) {
   };
   const genres = options('GENRE'), tags = options('TAG');
   return [
-    filter('sort', 'sort', 'Сортировка', [
-      ['viewsCount', 'Популярные'], ['likesCount', 'Лайки'], ['chaptersCount', 'Количество глав'],
-      ['bookmarksCount', 'Закладки'], ['averageRating', 'Высокий рейтинг'], ['createdAt', 'Новые']]),
+    filter('sort', 'sort', 'Сортировка', inukoSorts),
     ...(genres.length ? [filter('triStateMultiSelect', 'genre', 'Жанры', genres)] : []),
     ...(tags.length ? [filter('triStateMultiSelect', 'tags', 'Теги', tags)] : []),
     filter('multiSelect', 'status', 'Статус', [

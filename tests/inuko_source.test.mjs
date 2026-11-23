@@ -7,6 +7,12 @@ import {sourceDefinitions} from '../src/definitions.mjs';
 const chapterId='11111111-1111-4111-8111-111111111111';
 const genreId='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',tagId='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
 const labels=[{id:genreId,slug:'fantasy',name:'Фэнтези',kind:'GENRE'},{id:tagId,slug:'magic',name:'Магия',kind:'TAG'}];
+// Contract verified against the website's catalog selector and URL parameters.
+const websiteSorts=[
+ ['viewsCount','По просмотрам'],['likesCount','По лайкам'],['chaptersCount','По главам'],
+ ['bookmarksCount','По закладкам'],['averageRating','По рейтингу'],
+ ['createdAt','По дате создания'],['latestChapterAt','По дате последней главы'],
+];
 const book={id:'book-id',slug:'demo',name:{ru:'Название',en:'Title'},poster:'https://static.inuko.me/book/full.jpeg',description:'Fixture',chaptersCount:1,readingRestriction:'NONE',labels};
 const rows=[{id:chapterId,number:1,volume:1,branchId:'main'}];
 const markup=data=>`<script>$_TSR.router=($R=>$R[0]=${JSON.stringify(data)})($R["tsr"]);</script>`;
@@ -28,6 +34,23 @@ function fixture(create,{baseUrl='https://source.example',failBook=false,failCat
  return {source,calls};
 }
 for(const [name,create] of [['InkStory',createInkStory],['PureManga',createPureManga]]){
+ test(`${name}: all catalog sort labels match the website and include the latest chapter date`,async()=>{
+  const {source}=fixture(create);
+  const sort=(await source.getFilters()).find(filter=>filter.key==='sort');
+  assert.equal(sort.kind,'sort');
+  assert.deepEqual(sort.options.map(option=>[option.value,option.label]),websiteSorts);
+ });
+ test(`${name}: every selectable sort reaches catalog requests with its direction, filters and page`,async()=>{
+  const {source,calls}=fixture(create);
+  for(const [field] of websiteSorts)for(const direction of ['desc','asc'])for(const page of [1,2]){
+   await source.search({page,searchTerm:'',selectedFilters:{sort:[field,direction],status:['ONGOING']}});
+   const query=new URL(calls.at(-1).url).searchParams;
+   assert.equal(query.get('sort'),field);
+   assert.equal(query.get('orderBy'),direction);
+   assert.equal(query.get('page'),String(page-1));
+   assert.deepEqual(JSON.parse(query.get('status')),['ONGOING']);
+  }
+ });
  test(`${name}: details and all chapters share one SSR load and retain title/chapter IDs`,async()=>{
   const {source,calls}=fixture(create);const [details,chapters]=await Promise.all([source.getDetails({mangaId:'/content/demo'}),source.getChapters({mangaId:'/content/demo'})]);
   assert.equal(details.id,'/content/demo');assert.equal(details.title,'Название');assert.deepEqual(chapters.map(row=>row.id),['/content/demo/'+chapterId]);

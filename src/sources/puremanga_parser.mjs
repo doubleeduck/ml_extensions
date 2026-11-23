@@ -1,7 +1,7 @@
 import {chapter, compareText, filter, isoDate, manga, parseError, record, records, string} from '../core/data.mjs';
+import {inukoSorts} from '../engines/inuko_sorts.mjs';
 export {normalizeImageUrl,parsePages} from '../engines/inuko_images.mjs';
 
-const sorts = [['viewsCount','Популярные'],['likesCount','Лайки'],['chaptersCount','Количество глав'],['bookmarksCount','Закладки'],['averageRating','Высокий рейтинг'],['createdAt','Новые'],['latestChapterAt','Последние обновления']];
 const choices = [
   ['status','Статус',[['ONGOING','Выходит'],['DONE','Завершено'],['FROZEN','Заморожено'],['ANNOUNCE','Анонс']]],
   ['country','Страна',[['RUSSIA','Россия'],['JAPAN','Япония'],['KOREA','Корея'],['CHINA','Китай'],['OTHER','Другое']]],
@@ -14,7 +14,7 @@ const uuid = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/iu;
 // public API, whose search index omits adult content even with an explicit filter.
 export function catalogQuery({page=1,searchTerm='',selectedFilters={}}={},forcedSort,labels=[]) {
   const sort=selectedFilters.sort ?? [], field=forcedSort ?? sort[0] ?? 'viewsCount';
-  if (!sorts.some(([key])=>key===field)) throw parseError('Invalid PureManga sort.');
+  if (!inukoSorts.some(([key])=>key===field)) throw parseError('Invalid PureManga sort.');
   const query={page:Math.max(0,(Math.trunc(Number(page))||1)-1),size:40,sort:field,orderBy:!forcedSort&&sort[1]==='asc'?'asc':'desc'};
   if(searchTerm.trim())query.search=searchTerm.trim();
   for(const [key,,options] of choices) {
@@ -90,7 +90,7 @@ export function parseFilters(payload) {
   };
   const genres = options('GENRE'), tags = options('TAG');
   return [
-    filter('sort', 'sort', 'Сортировка', sorts),
+    filter('sort', 'sort', 'Сортировка', inukoSorts),
     ...(genres.length ? [filter('triStateMultiSelect', 'genre', 'Жанры', genres)] : []),
     ...(tags.length ? [filter('triStateMultiSelect', 'tags', 'Теги', tags)] : []),
     ...choices.map(([key,label,options])=>filter('multiSelect',key,label,options)),
