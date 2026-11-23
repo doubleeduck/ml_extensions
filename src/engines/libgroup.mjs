@@ -18,16 +18,20 @@ export default function createLibGroup(ctx) {
   let apiPreference;
   const dataList = value => requireArray(requireRecord(value).data,'LibGroup data');
   const dataMap = value => requireRecord(requireRecord(value).data,'LibGroup data');
-  const trimDomain = domain => domain.trim().replace(/\/+$/u,'');
   async function settings() {
-    return {imageServer:'compress',titleLanguage:'eng',chapterMode:'ms_mixing',showAlternativeBranchSource:false,
+    const config = {imageServer:'compress',titleLanguage:'eng',chapterMode:'ms_mixing',showAlternativeBranchSource:false,
       apiDomain:defaultLibGroupApiDomain,...record(await ctx.settings.get('source'))};
+    const domain = typeof config.apiDomain === 'string' ? config.apiDomain.trim().replace(/\/+$/u,'') : '';
+    config.apiDomain = libGroupApiDomains.includes(domain) ? domain : defaultLibGroupApiDomain;
+    return config;
   }
-  const headers = () => ({Accept:'application/json, text/plain, */*',Origin:origin,Referer:`${origin}/`,'Site-Id':String(siteId)});
+  // Native requests do not need a browser CORS Origin. Some LibGroup edges
+  // stall on it even though the same URL works with Referer and Site-Id alone.
+  const headers = () => ({Accept:'application/json, text/plain, */*',Referer:`${origin}/`,'Site-Id':String(siteId)});
   async function json(path, query, config, allowNotFound = false) {
-    const configured = trimDomain(config.apiDomain);
+    const configured = config.apiDomain;
     const preferred = apiPreference?.configured === configured ? [apiPreference.active] : [];
-    const domains = [...new Set([...preferred,configured,...libGroupApiDomains].map(trimDomain).filter(Boolean))];
+    const domains = [...new Set([...preferred,configured,...libGroupApiDomains])];
     let last, onlyNotFound = true;
     for (const domain of domains) {
       try {
@@ -97,7 +101,7 @@ export default function createLibGroup(ctx) {
   async function readableImage(url) {
     try {
       const response = await ctx.http.request({method:'HEAD',url,responseType:'text',timeoutMs:6000,
-        headers:{Accept:'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',Origin:origin,Referer:`${origin}/`}});
+        headers:{Accept:'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',Referer:`${origin}/`}});
       const rawSize = response.headers['content-length'];
       const size = rawSize == null || rawSize === '' ? NaN : Number(rawSize);
       return response.status >= 200 && response.status < 300 && (!Number.isFinite(size) || size > 600);

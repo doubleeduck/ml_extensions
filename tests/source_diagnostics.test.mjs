@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {spawnSync} from 'node:child_process';
+import {fileURLToPath} from 'node:url';
 import {diagnoseSource,allowsUrl,markdownReport,safeUrl} from '../tools/diagnostics/source_diagnostics.mjs';
 import {extractHtml} from '../tools/diagnostics/html_projection.mjs';
 
@@ -22,7 +23,7 @@ async function run(overrides = {}) {
 test('origin matching respects HTTPS, ports, subdomain boundaries and credentials', () => {
   assert.equal(allowsUrl('https://img.cdn.example/a',['https://cdn.example'],true),true);
   for (const url of ['https://evilcdn.example/a','https://cdn.example.evil/a','http://cdn.example/a',
-    'https://cdn.example:8443/a','https://user:pass@cdn.example/a','not a URL'])
+    'https://cdn.example:8443/a','https://user:pass@cdn.example/a','https://cdn.example/a#fragment','https://cdn.example/with space','not a URL'])
     assert.equal(allowsUrl(url,['https://cdn.example'],true),false,url);
   assert.equal(allowsUrl('https://img.cdn.example/a',['https://cdn.example']),false);
 });
@@ -46,6 +47,14 @@ test('new cover, flag and reader origins are detected even without downloading i
   assert.equal(report.findings.filter(row => row.code === 'missing_image_origin').length,3);
   assert.ok(report.findings.some(row => row.message.includes('network.imageOrigins')));
   assert.ok(!report.requests.some(row => row.method === 'HEAD'));
+});
+
+test('source-owned HEAD probes may use image grants without an HTTP origin grant', async () => {
+  const report = await run({createSource:ctx => ({...factory(ctx),getPages:async () => {
+    await ctx.http.request({method:'HEAD',url:'https://images.example/page.jpg',responseType:'text'});
+    return [{index:0,imageUrl:'https://images.example/page.jpg'}];
+  }}),fetchImpl:async (url,input) => input.method === 'HEAD' ? new Response(null,{status:200}) : json([title])});
+  assert.equal(report.status,'ok');assert.equal(report.findings.length,0);
 });
 
 test('HTTP redirects identify undeclared replacement domains and keep exercising the parser', async () => {
@@ -141,6 +150,7 @@ test('request/operation deadlines abort pending IO and still produce a report', 
   const report = await run({options:{...options,timeoutMs:100,operationTimeoutMs:10},
     fetchImpl:async (url,{signal}) => new Promise((resolve,reject) => signal.addEventListener('abort',() => reject(signal.reason),{once:true}))});
   assert.equal(report.status,'error');assert.equal(report.checks.find(row => row.name === 'popular:1').code,'timeout');
+  assert.equal(report.requests[0].code,'cancelled');
   assert.ok(report.elapsedMs < 1000);
 });
 
@@ -178,9 +188,9 @@ test('HTML traversal follows element siblings and required fields fail clearly',
 });
 
 test('CLI lists real source IDs, validates arguments and never needs network for help', () => {
-  const script = new URL('../tools/diagnose_source.mjs',import.meta.url);
-  const list = spawnSync(process.execPath,[script.pathname.replace(/^\/([A-Za-z]:)/u,'$1'),'--list'],{encoding:'utf8'});
+  const script = fileURLToPath(new URL('../tools/diagnose_source.mjs',import.meta.url));
+  const list = spawnSync(process.execPath,[script,'--list'],{encoding:'utf8'});
   assert.equal(list.status,0,list.stderr);assert.match(list.stdout,/https:\/\//u);
-  const invalid = spawnSync(process.execPath,[script.pathname.replace(/^\/([A-Za-z]:)/u,'$1'),'does.not.exist'],{encoding:'utf8'});
+  const invalid = spawnSync(process.execPath,[script,'does.not.exist'],{encoding:'utf8'});
   assert.equal(invalid.status,2);assert.match(invalid.stderr,/Unknown source/u);
 });

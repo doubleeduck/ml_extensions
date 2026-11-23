@@ -81,7 +81,7 @@ const cookieAuth = (host,login = '/login/') => ({profileId:'host.cookie.v1',logi
 const libApis = libGroupApiDomains;
 // Cookie Domain roots are explicit grants, not shared cookie jars. Every
 // instance still receives only the browser/HTTP session belonging to its ID.
-const libCookieRoots = ['cdnlibs.org','mangalib.me','hentaicdn.org','imglib.info'].map(origin);
+const libCookieRoots = ['mangalib.me','hentaicdn.org'].map(origin);
 const libImages = ['mixlib.me','imglib.info','mangalib.me', 'cdnrulib.link','hentaicdn.org','cdnlib.org','cdnlibs.org','mangalib.org','mangalib.net','lib.social'].map(origin);
 const enumSetting = (key,label,options,value) => ({key,label,type:'enum',default:value,options:options.map(([value,label]) => ({value,label}))});
 const titleLanguage = enumSetting('titleLanguage','Язык названия',[['eng','Английский'],['rus','Русский']],'eng');
@@ -93,7 +93,8 @@ const libSettings = {version:1,legacyNamespace:'libgroup',roles:{titleLanguage:'
 const libgroup = (id,name,host,siteId,nsfw = false) => source(id,name,host,'engines/libgroup.mjs',{engine:'LibGroup JS',nsfw,refresh:true,recommendations:true,
   parameters:{siteId:String(siteId)},settings:libSettings,origins:libApis,images:libImages,
   auth:{...cookieAuth(host,'/ru'),profileId:'host.session.v1',rules:{bearer:true,cookieAll:['XSRF-TOKEN','mangalib_session','remember_web_*'],tokenStorageKeys:['auth'],tokenPath:['token','access_token'],tokenTypePath:['token','token_type'],tokenType:'bearer'},cookieOrigins:[...new Set([origin(host),...libApis,...libCookieRoots])],sessionExport:{headers:['Cookie','Authorization','X-XSRF-TOKEN'],values:['accessToken','csrfToken']}},
-  template:'/ru/manga/{id}',bindings:{author:'authors',artist:'artists',tags:'tags'},media:{sendOrigin:true}});
+  // Like the website's <img>: Referer is sent, but no CORS Origin header.
+  template:'/ru/manga/{id}',bindings:{author:'authors',artist:'artists',tags:'tags'}});
 const groupleCookieRoots = {'b.zazaza.me':'zazaza.me','2.mintmanga.one':'mintmanga.one','1.seimanga.me':'seimanga.me','1.selfmanga.live':'selfmanga.live'};
 const grouple = (id,name,host,nsfw = false) => {
   const authOrigin = 'https://3.grouple.co';

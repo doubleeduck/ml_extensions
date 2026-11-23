@@ -12,6 +12,11 @@ test('MangaLib allows the current LibSocial cover host', () => {
   assert.ok(source.network.imageOrigins.includes('https://lib.social'));
   assert.equal(source.network.allowSubdomains,true);
 });
+test('MangaLib loads images with a website referer and without an Origin header', () => {
+  const source = sourceDefinitions().find(value => value.id === 'ru.mangalib');
+  assert.equal(source.media.sendOrigin,false);
+  assert.equal(source.media.refererOrigin,'https://mangalib.me');
+});
 const item = {id:7965,slug:'chainsaw-man',slug_url:'7965--chainsaw-man',eng_name:'Chainsaw Man',rus_name:'Человек-бензопила',name:'Name',
   cover:{md:'https://cover.example/image.jpg'},status:{label:'Ongoing'},type:{label:'Manga'},caution:{label:'16+'},
   rating:{average:'9.2'},releaseDateString:'December 2018',genres:[{name:'Drama'},{name:'drama'}]};
@@ -64,12 +69,13 @@ test('constants only expose options for this site and keep original filter keys'
   assert.deepEqual(filters.map(item => item.key),['sort','types','genres','bookmarks','require_chapters']);
   assert.deepEqual(filters.find(item => item.key === 'types').options.map(item => item.value),['1']);
 });
-test('three site instances send their own Site-Id and origin, with separate settings', async () => {
+test('site instances keep separate settings and send their Site-Id and Referer without Origin', async () => {
   for (const site of [1,2,4]) {
     const source = createLibGroup(context((url,request) => {
       assert.equal(request.headers['Site-Id'],String(site));
       assert.equal(url.searchParams.get('site_id[]'),String(site));
-      assert.equal(request.headers.Origin,site === 1 ? 'https://mangalib.me' : site === 2 ? 'https://v2.shlib.life' : 'https://hentailib.me');
+      assert.equal(request.headers.Origin,undefined);
+      assert.equal(request.headers.Referer,(site === 1 ? 'https://mangalib.me' : site === 2 ? 'https://v2.shlib.life' : 'https://hentailib.me')+'/');
       assert.equal(request.headers.Cookie,undefined); assert.equal(request.headers.Authorization,undefined);
       return {data:[item]};
     },{titleLanguage:site === 1 ? 'eng' : 'rus'},site));
@@ -83,7 +89,7 @@ test('mirror failover retries transport failure but never auth/rate-limit/cancel
     if (hosts.length === 1) throw Object.assign(new Error('offline'),{code:'network'});
     return {data:[item]};
   }));
-  await source.getPopular(); assert.deepEqual(hosts,['api.mangalib.me','api2.mangalib.me']);
+  await source.getPopular(); assert.deepEqual(hosts,['api.mangalib.me','hapi.hentaicdn.org']);
   for (const code of ['auth_required','cancelled','rate_limited','parse_error']) {
     let calls = 0;
     const failed = createLibGroup(context(() => { calls++; throw Object.assign(new Error(code),{code}); }));
@@ -96,24 +102,42 @@ test('runtime mirrors, settings and signed grants use the same API list', () => 
   const source = sourceDefinitions().find(value => value.id === 'ru.mangalib');
   const setting = source.settings.fields.find(value => value.key === 'apiDomain');
   assert.equal(defaultLibGroupApiDomain,'https://api.mangalib.me');
+  assert.deepEqual([...libGroupApiDomains],['https://api.mangalib.me','https://hapi.hentaicdn.org']);
   assert.equal(setting.default,defaultLibGroupApiDomain);
   assert.deepEqual(setting.options.map(value => value.value),[...libGroupApiDomains]);
   for (const domain of libGroupApiDomains) assert.ok(source.network.origins.includes(domain),domain);
+  assert.deepEqual(source.network.origins,['https://mangalib.me',...libGroupApiDomains]);
+  for (const retired of ['https://api2.mangalib.me','https://api.cdnlibs.org','https://api.imglib.info'])
+    assert.ok(!source.auth.cookieOrigins.includes(retired),retired);
 });
 
-test('saved old API fails over to the current API and reuses it for subsequent reads', async () => {
+test('retired or invalid saved API settings are replaced before any HTTP request', async () => {
+  for (const apiDomain of ['https://api2.mangalib.me','https://api.cdnlibs.org','https://api.imglib.info','https://unknown.example',null,5,'']) {
+    const source = createLibGroup(context(url => {
+      assert.equal(url.origin,defaultLibGroupApiDomain);
+      return {data:[item]};
+    },{apiDomain}));
+    assert.equal((await source.getPopular()).length,1);
+  }
+});
+
+test('a selected working API fails over once and reuses its replacement until settings change', async () => {
   const hosts = [];
-  const saved = {apiDomain:'https://api2.mangalib.me'};
+  const saved = {apiDomain:' https://hapi.hentaicdn.org/ '};
+  let secondaryAvailable = false;
   const source = createLibGroup(context((url,request) => {
     hosts.push(url.host);
     assert.equal(request.timeoutMs,10000);
-    if (url.host === 'api2.mangalib.me') throw Object.assign(Error('Bad gateway'),{code:'http_error',httpStatus:502});
+    if (url.host === 'hapi.hentaicdn.org' && !secondaryAvailable) throw Object.assign(Error('Bad gateway'),{code:'http_error',httpStatus:502});
     return {data:[item]};
   },saved));
   await source.getPopular();
   await source.getLatest();
-  assert.deepEqual(hosts,['api2.mangalib.me','api.mangalib.me','api.mangalib.me']);
-  saved.apiDomain = 'https://hapi.hentaicdn.org';
+  assert.deepEqual(hosts,['hapi.hentaicdn.org','api.mangalib.me','api.mangalib.me']);
+  // Switching the configured API resets the remembered preference.
+  saved.apiDomain = 'https://api.mangalib.me';
+  await source.getPopular();
+  saved.apiDomain = 'https://hapi.hentaicdn.org'; secondaryAvailable = true;
   await source.getPopular();
   assert.equal(hosts.at(-1),'hapi.hentaicdn.org');
 });
@@ -130,7 +154,7 @@ test('a remembered mirror can fail over again without affecting other source ins
   await source.getPopular();
   primaryAvailable = true;
   await source.getPopular();
-  assert.deepEqual(hosts,['api.mangalib.me','api2.mangalib.me','api2.mangalib.me','api.mangalib.me']);
+  assert.deepEqual(hosts,['api.mangalib.me','hapi.hentaicdn.org','hapi.hentaicdn.org','api.mangalib.me']);
   const independent = createLibGroup(context(url => {assert.equal(url.host,'api.mangalib.me');return {data:[]};}));
   await independent.getPopular();
 });
@@ -149,7 +173,12 @@ test('chapter list reverses endpoint order without merging chapter identities', 
 test('auto image probing is coalesced across 40 pages and cached for the next chapter', async () => {
   let probes = 0, constants = 0;
   const ctx = context((url,request) => {
-    if (request.method === 'HEAD') { probes++; return ''; }
+    if (request.method === 'HEAD') {
+      probes++;
+      assert.equal(request.headers.Origin,undefined);
+      assert.equal(request.headers.Referer,'https://mangalib.me/');
+      return '';
+    }
     if (url.pathname.endsWith('/constants')) { constants++; return {data:{imageServers:[{id:'main',url:'https://img.example',site_ids:[1]}]}}; }
     return {data:{pages:Array.from({length:40},(_,index) => ({slug:String(index+1),url:`/same-bucket/${40-index}.png`}))}};
   },{imageServer:'auto'});

@@ -13,8 +13,9 @@ export function safeUrl(input) {
 }
 export function allowsUrl(input, origins = [], allowSubdomains = false) {
   try {
+    if (String(input).length > 8192 || /[\x00-\x20\x7f\\]/u.test(String(input))) return false;
     const url = new URL(input);
-    if (url.protocol !== 'https:' || url.username || url.password) return false;
+    if (url.protocol !== 'https:' || url.username || url.password || url.hash) return false;
     return origins.some(origin => {
       const allowed = new URL(origin);
       return url.protocol === allowed.protocol && url.port === allowed.port &&
@@ -48,7 +49,7 @@ function decodeBody(bytes, type) {
 export async function diagnoseSource({definition,createSource,options = {},fetchImpl = fetch,onProgress = () => {}}) {
   const started = Date.now(), scope = new AsyncLocalStorage();
   const baseUrl = options.baseUrl ?? definition.baseUrl;
-  const report = {schemaVersion:1,source:{id:definition.id,name:definition.name,baseUrl,metadataOnly:!!definition.metadataOnly},
+  const report = {schemaVersion:1,source:{id:definition.id,name:definition.name,baseUrl:safeUrl(baseUrl),metadataOnly:!!definition.metadataOnly},
     startedAt:new Date(started).toISOString(),status:'ok',checks:[],findings:[],requests:[],media:[],
     limitations:'Anonymous Node HTTP checks only. Browser challenges, login, native TLS and all filter combinations require separate checks. Redirects can reveal a new domain; an unannounced replacement cannot be discovered reliably.'};
   const seenFindings = new Set(), seenMedia = new Set(), mediaCandidates = [];
@@ -57,15 +58,15 @@ export async function diagnoseSource({definition,createSource,options = {},fetch
     if (!seenFindings.has(key)) {seenFindings.add(key);report.findings.push({severity,code,message,...(clean ? {url:clean} : {})});}
   };
   const network = definition.network ?? {}, allowSubdomains = network.allowSubdomains === true;
-  function observeUrl(url,kind) {
-    const origins = kind === 'image' ? network.imageOrigins : network.origins;
+  function observeUrl(url,kind,imageProbe = false) {
+    const origins = kind === 'image' ? network.imageOrigins : [...(network.origins ?? []),...(imageProbe ? network.imageOrigins ?? [] : [])];
     if (!allowsUrl(url,origins,allowSubdomains)) {
-      let origin;try {origin = new URL(url).origin;} catch {origin = String(url);}
+      let origin;try {origin = new URL(url).origin;} catch {origin = '[invalid URL]';}
       find('error',kind === 'image' ? 'missing_image_origin' : 'missing_http_origin',
-        `The app will reject this URL. Check network.${kind === 'image' ? 'imageOrigins' : 'origins'} for ${origin}.`,url);
+        `The app will reject this URL. Check network.${kind === 'image' ? 'imageOrigins' : 'origins'}${imageProbe ? ' or network.imageOrigins (HEAD probe)' : ''} for ${origin}.`,url);
     }
   }
-  async function request(input,{kind = 'http',grant = true} = {}) {
+  async function request(input,{kind = 'http'} = {}) {
     let method = input.method ?? 'GET';
     const url = new URL(input.url);
     if (url.protocol !== 'https:' || url.username || url.password) throw failure('permission_denied','Only HTTPS URLs without credentials are supported');
@@ -87,7 +88,7 @@ export async function diagnoseSource({definition,createSource,options = {},fetch
       if (typeof input.body !== 'string' && !headers.has('Content-Type')) headers.set('Content-Type','application/json');
     }
     try {
-      if (grant) observeUrl(url,kind);
+      observeUrl(url,kind,method === 'HEAD');
       if (kind === 'http' && network.methods && !network.methods.includes(method)) find('error','missing_http_method',`The manifest does not allow ${method}.`,url);
       let target = url;
       for (let redirects = 0;;redirects++) {
@@ -108,7 +109,7 @@ export async function diagnoseSource({definition,createSource,options = {},fetch
             body = undefined;headers.delete('Content-Type');
           }
           target = next;
-          if (grant) observeUrl(target,kind);
+          observeUrl(target,kind,method === 'HEAD');
           row.responseUrl = safeUrl(target);
           continue;
         }
@@ -130,9 +131,9 @@ export async function diagnoseSource({definition,createSource,options = {},fetch
         return {status:response.status,url:target.href,headers:Object.fromEntries(response.headers),body:data};
       }
     } catch (error) {
-      const code = signal.aborted ? 'timeout' : error.code ?? 'network';
+      const code = scope.getStore()?.signal.aborted ? 'cancelled' : signal.aborted ? 'timeout' : error.code ?? 'network';
       row.code = code;
-      if (!error.code || signal.aborted) throw failure(code,signal.aborted ? `HTTP deadline exceeded (${deadline} ms)` : 'HTTP transport failed',{
+      if (!error.code || signal.aborted) throw failure(code,code === 'cancelled' ? 'Diagnostic operation ended' : signal.aborted ? `HTTP deadline exceeded (${deadline} ms)` : 'HTTP transport failed',{
         cause:error,httpStatus:row.status});
       throw error;
     } finally {row.elapsedMs = Date.now()-tick;}
@@ -177,7 +178,8 @@ export async function diagnoseSource({definition,createSource,options = {},fetch
     } catch (error) {
       row.code = error.code ?? 'runtime_error';
       row.status = advisory || blockedBy(row.code) || name.startsWith('image:') && [405,501].includes(error.httpStatus) ? 'warning' : 'failed';
-      row.message = error.httpStatus ? `${row.code} (HTTP ${error.httpStatus})` : row.code;
+      const detail = String(error.message ?? '').replace(/https?:\/\/[^\s"'<>]+/gu,safeUrl).slice(0,400);
+      row.message = `${row.code}${error.httpStatus ? ` (HTTP ${error.httpStatus})` : ''}${detail ? `: ${detail}` : ''}`;
       find(row.status === 'failed' ? 'error' : 'warning',row.code,
         blockedBy(row.code) ? `${name}: anonymous access is blocked or this chapter is restricted. Check login/browser verification in the app.` :
           `${name} failed. Check the HTTP trace, current website endpoints and parser contract.`);
@@ -244,7 +246,7 @@ export async function diagnoseSource({definition,createSource,options = {},fetch
           ...(definition.media?.sendOrigin ? {Origin:definition.media.refererOrigin ?? new URL(baseUrl).origin} : {}),
         }},{kind:'image'});
         if (!result.headers['content-type']?.toLowerCase().startsWith('image/')) find('warning','unexpected_image_type','Image endpoint did not report an image MIME type.',media.url);
-      });
+      },{advisory:true});
     }
   }
   for (const row of report.requests) if (row.code || row.status >= 400)

@@ -26,6 +26,7 @@
 
 ## Документация
 
+- Source diagnostics · [English](docs/SOURCE_DIAGNOSTICS.md) · [Русский](docs/SOURCE_DIAGNOSTICS_RU.md) — `npm run diagnose -- --list`
 - [Создание источника и расширения, примеры и публикация — русский](docs/AUTHORING_RU.md)
 - [Creating sources and extensions, examples and publication — English](docs/AUTHORING_EN.md)
 
