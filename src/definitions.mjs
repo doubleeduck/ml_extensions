@@ -76,7 +76,7 @@ function source(id,name,host,module,extra = {}) {
 }
 const cookieAuth = (host,login = '/login/') => ({profileId:'host.cookie.v1',loginUrl:new URL(login,origin(host)).href,
   cookieOrigins:[origin(host)],sessionExport:{headers:['Cookie'],values:[]}});
-const libApis = ['api.cdnlibs.org','api2.mangalib.me','hapi.hentaicdn.org','api.imglib.info'].map(origin);
+const libApis = ['api.cdnlibs.org','api2.mangalib.me','hapi.hentaicdn.org','api.imglib.info', 'api.mangalib.me'].map(origin);
 // Cookie Domain roots are explicit grants, not shared cookie jars. Every
 // instance still receives only the browser/HTTP session belonging to its ID.
 const libCookieRoots = ['cdnlibs.org','mangalib.me','hentaicdn.org','imglib.info'].map(origin);
