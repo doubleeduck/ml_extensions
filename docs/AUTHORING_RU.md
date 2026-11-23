@@ -768,6 +768,7 @@ interface MangaDto {
   status: string | null; type: string | null; ageRating: string | null;
   rating: number | null; releaseYear: string | null;
   pageCount: number | null; languageFlagUrl: string | null; tags: string[];
+  languageCode?: string | null;
 }
 interface ChapterAccessDto {
   type: 'available' | 'temporarilyUnavailable' | 'paid';
@@ -788,6 +789,7 @@ interface RecommendationPageDto {
 | MangaDto.id, ChapterDto.id | Непустые стабильные строки. Это не обязательно число или URL; составные ID допустимы. Не меняйте формат при смене домена. |
 | title | Непустой отображаемый текст, без HTML; title отсутствующего тайтла не заменяется фиктивным названием. |
 | coverUrl, languageFlagUrl | Абсолютный HTTPS URL или null, с разрешённым image origin. Не используйте data:/blob: или относительный путь. |
+| languageCode | Необязательный язык доступных страниц с учётом перевода издания: `en`, `ja`, `ru`, `zh-Hant`. Если он неизвестен или издание многоязычное, передавайте `null` или опускайте поле. Это не язык оригинального произведения. Нормализуйте псевдонимы сайта: `jp` → `ja`, `kr` → `ko`. Заполняйте поле из уже полученных данных каталога/карточки без отдельного запроса. Хост не расшифровывает картинку флага и не определяет язык по ID источника. Старые хосты игнорируют поле. |
 | description | Строка или null, до 256 Ки символов; не возвращайте весь документ сайта. |
 | secondaryTitle, author, artist, status, type, ageRating, releaseYear | Строки или null. Универсальных enum для status/type/ageRating нет. releaseYear — строка, не число. |
 | rating | Конечное число или null; wire не задаёт универсальную шкалу и не нормализует рейтинг автоматически. |

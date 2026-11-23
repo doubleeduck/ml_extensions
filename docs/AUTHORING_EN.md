@@ -767,6 +767,7 @@ interface MangaDto {
   status: string | null; type: string | null; ageRating: string | null;
   rating: number | null; releaseYear: string | null;
   pageCount: number | null; languageFlagUrl: string | null; tags: string[];
+  languageCode?: string | null;
 }
 interface ChapterAccessDto {
   type: 'available' | 'temporarilyUnavailable' | 'paid';
@@ -787,6 +788,7 @@ interface RecommendationPageDto {
 | MangaDto.id, ChapterDto.id | Nonempty stable strings. They need not be numbers or URLs; composite IDs are allowed. Preserve the format across domain changes. |
 | title | Nonempty plain display text; do not replace a missing manga with a fictional title. |
 | coverUrl, languageFlagUrl | Absolute HTTPS URL or null, with an allowed image origin. Do not use data:/blob: or relative paths. |
+| languageCode | Optional language of the available pages, including an edition’s translation: `en`, `ja`, `ru`, `zh-Hant`. Use `null` or omit when unknown or mixed. This is not the original language of the work. Normalize site aliases such as `jp` → `ja`, `kr` → `ko`. Supply it with existing catalog/details metadata; never request a separate page just for a language hint. The host does not decode a flag image or infer a language from a source ID. Older hosts ignore the field. |
 | description | String or null, up to 256 Ki characters; do not return the entire website document. |
 | secondaryTitle, author, artist, status, type, ageRating, releaseYear | Strings or null. There are no universal status/type/ageRating enums. releaseYear is a string, not a number. |
 | rating | Finite number or null; the wire contract specifies no universal scale and does not normalize ratings automatically. |

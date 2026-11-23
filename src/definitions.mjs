@@ -1,3 +1,5 @@
+import {defaultLibGroupApiDomain, libGroupApiDomains} from './engines/libgroup_config.mjs';
+
 /** Signed, declarative registrations. IDs are the existing persistent app IDs. */
 const browse = ['browse','latest','search','filters'];
 const origin = host => `https://${host}`;
@@ -76,7 +78,7 @@ function source(id,name,host,module,extra = {}) {
 }
 const cookieAuth = (host,login = '/login/') => ({profileId:'host.cookie.v1',loginUrl:new URL(login,origin(host)).href,
   cookieOrigins:[origin(host)],sessionExport:{headers:['Cookie'],values:[]}});
-const libApis = ['api.cdnlibs.org','api2.mangalib.me','hapi.hentaicdn.org','api.imglib.info', 'api.mangalib.me'].map(origin);
+const libApis = libGroupApiDomains;
 // Cookie Domain roots are explicit grants, not shared cookie jars. Every
 // instance still receives only the browser/HTTP session belonging to its ID.
 const libCookieRoots = ['cdnlibs.org','mangalib.me','hentaicdn.org','imglib.info'].map(origin);
@@ -87,7 +89,7 @@ const libSettings = {version:1,legacyNamespace:'libgroup',roles:{titleLanguage:'
   enumSetting('chapterMode','Ветки перевода',[['ms_mixing','Основная'],['ms_combining','Все ветки']],'ms_mixing'),
   {key:'showAlternativeBranchSource',label:'Показывать загрузившего, если нет команды',type:'boolean',default:false},
   enumSetting('imageServer','Сервер изображений',[['auto','Автоматически'],['main','Основной'],['secondary','Дополнительный'],['compress','Сжатые изображения']],'compress'),
-  enumSetting('apiDomain','API сервер',libApis.map(url => [url,new URL(url).host]),'https://api2.mangalib.me')]};
+  enumSetting('apiDomain','API сервер',libApis.map(url => [url,new URL(url).host]),defaultLibGroupApiDomain)]};
 const libgroup = (id,name,host,siteId,nsfw = false) => source(id,name,host,'engines/libgroup.mjs',{engine:'LibGroup JS',nsfw,refresh:true,recommendations:true,
   parameters:{siteId:String(siteId)},settings:libSettings,origins:libApis,images:libImages,
   auth:{...cookieAuth(host,'/ru'),profileId:'host.session.v1',rules:{bearer:true,cookieAll:['XSRF-TOKEN','mangalib_session','remember_web_*'],tokenStorageKeys:['auth'],tokenPath:['token','access_token'],tokenTypePath:['token','token_type'],tokenType:'bearer'},cookieOrigins:[...new Set([origin(host),...libApis,...libCookieRoots])],sessionExport:{headers:['Cookie','Authorization','X-XSRF-TOKEN'],values:['accessToken','csrfToken']}},

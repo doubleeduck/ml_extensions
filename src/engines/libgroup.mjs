@@ -1,10 +1,10 @@
 import {recent} from '../core/recent.mjs';
 import {parseError, record, string} from '../core/data.mjs';
 import {finiteNumber, requireArray, requireRecord, requireText, urlWithQuery} from '../core/http.mjs';
+import {defaultLibGroupApiDomain, libGroupApiDomains} from './libgroup_config.mjs';
 import {decodeChapterId, needsTitlePreview, parseAccess, parseCatalogManga, parseChapterEntries, parseDetails,
   parseFilters, searchParameters, unavailable} from './libgroup_parser.mjs';
 
-const fallbackDomains = ['https://api.cdnlibs.org','https://api2.mangalib.me','https://hapi.hentaicdn.org','https://api.imglib.info'];
 const constantFields = ['genres','tags','types','scanlateStatus','status','format','ageRestriction','imageServers'];
 // Request field names differ from response names: caution returns ageRestriction.
 // Sending fields[]=ageRestriction makes the API reject the whole request (422).
@@ -15,22 +15,26 @@ export default function createLibGroup(ctx) {
   const siteId = Number(ctx.parameters.siteId), origin = new URL(ctx.baseUrl).origin;
   if (![1,2,4].includes(siteId)) throw new Error('Invalid LibGroup site configuration');
   const constantsCache = new Map(), serverCache = new Map(), probeCache = new Map(), probes = new Map();
+  let apiPreference;
   const dataList = value => requireArray(requireRecord(value).data,'LibGroup data');
   const dataMap = value => requireRecord(requireRecord(value).data,'LibGroup data');
   const trimDomain = domain => domain.trim().replace(/\/+$/u,'');
   async function settings() {
     return {imageServer:'compress',titleLanguage:'eng',chapterMode:'ms_mixing',showAlternativeBranchSource:false,
-      apiDomain:'https://api2.mangalib.me',...record(await ctx.settings.get('source'))};
+      apiDomain:defaultLibGroupApiDomain,...record(await ctx.settings.get('source'))};
   }
   const headers = () => ({Accept:'application/json, text/plain, */*',Origin:origin,Referer:`${origin}/`,'Site-Id':String(siteId)});
   async function json(path, query, config, allowNotFound = false) {
-    const domains = [...new Set([config.apiDomain,...fallbackDomains].map(trimDomain).filter(Boolean))];
+    const configured = trimDomain(config.apiDomain);
+    const preferred = apiPreference?.configured === configured ? [apiPreference.active] : [];
+    const domains = [...new Set([...preferred,configured,...libGroupApiDomains].map(trimDomain).filter(Boolean))];
     let last, onlyNotFound = true;
     for (const domain of domains) {
       try {
-        const response = await ctx.http.request({method:'GET',url:urlWithQuery(`/api${path}`,domain,query),responseType:'json',headers:headers()});
+        const response = await ctx.http.request({method:'GET',url:urlWithQuery(`/api${path}`,domain,query),responseType:'json',timeoutMs:10000,headers:headers()});
         const body = requireRecord(response.body,'LibGroup response');
         if (allowNotFound && record(record(body.data).toast).message === 'Not Found') continue;
+        apiPreference = {configured,active:domain};
         return body;
       } catch (error) {
         const body = record(error.body ?? error.response?.body), value = record(body.data ?? body);

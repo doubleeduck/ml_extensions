@@ -3,6 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import createLibGroup from '../src/engines/libgroup.mjs';
 import {sourceDefinitions} from '../src/definitions.mjs';
+import {defaultLibGroupApiDomain, libGroupApiDomains} from '../src/engines/libgroup_config.mjs';
 import {decodeChapterId, parseAccess, parseCatalogManga, parseChapterEntries, parseDetails, parseFilters, searchParameters, summary} from '../src/engines/libgroup_parser.mjs';
 
 const config = {titleLanguage:'eng',chapterMode:'ms_mixing'};
@@ -82,13 +83,56 @@ test('mirror failover retries transport failure but never auth/rate-limit/cancel
     if (hosts.length === 1) throw Object.assign(new Error('offline'),{code:'network'});
     return {data:[item]};
   }));
-  await source.getPopular(); assert.deepEqual(hosts,['api2.mangalib.me','api.cdnlibs.org']);
+  await source.getPopular(); assert.deepEqual(hosts,['api.mangalib.me','api2.mangalib.me']);
   for (const code of ['auth_required','cancelled','rate_limited','parse_error']) {
     let calls = 0;
     const failed = createLibGroup(context(() => { calls++; throw Object.assign(new Error(code),{code}); }));
     await assert.rejects(failed.getPopular(),error => error.code === code);
     assert.equal(calls,1);
   }
+});
+
+test('runtime mirrors, settings and signed grants use the same API list', () => {
+  const source = sourceDefinitions().find(value => value.id === 'ru.mangalib');
+  const setting = source.settings.fields.find(value => value.key === 'apiDomain');
+  assert.equal(defaultLibGroupApiDomain,'https://api.mangalib.me');
+  assert.equal(setting.default,defaultLibGroupApiDomain);
+  assert.deepEqual(setting.options.map(value => value.value),[...libGroupApiDomains]);
+  for (const domain of libGroupApiDomains) assert.ok(source.network.origins.includes(domain),domain);
+});
+
+test('saved old API fails over to the current API and reuses it for subsequent reads', async () => {
+  const hosts = [];
+  const saved = {apiDomain:'https://api2.mangalib.me'};
+  const source = createLibGroup(context((url,request) => {
+    hosts.push(url.host);
+    assert.equal(request.timeoutMs,10000);
+    if (url.host === 'api2.mangalib.me') throw Object.assign(Error('Bad gateway'),{code:'http_error',httpStatus:502});
+    return {data:[item]};
+  },saved));
+  await source.getPopular();
+  await source.getLatest();
+  assert.deepEqual(hosts,['api2.mangalib.me','api.mangalib.me','api.mangalib.me']);
+  saved.apiDomain = 'https://hapi.hentaicdn.org';
+  await source.getPopular();
+  assert.equal(hosts.at(-1),'hapi.hentaicdn.org');
+});
+
+test('a remembered mirror can fail over again without affecting other source instances', async () => {
+  const hosts = [];
+  let primaryAvailable = false;
+  const source = createLibGroup(context(url => {
+    hosts.push(url.host);
+    if (url.host === 'api.mangalib.me' ? !primaryAvailable : primaryAvailable)
+      throw Object.assign(Error('Unavailable'),{code:'timeout'});
+    return {data:[item]};
+  }));
+  await source.getPopular();
+  primaryAvailable = true;
+  await source.getPopular();
+  assert.deepEqual(hosts,['api.mangalib.me','api2.mangalib.me','api2.mangalib.me','api.mangalib.me']);
+  const independent = createLibGroup(context(url => {assert.equal(url.host,'api.mangalib.me');return {data:[]};}));
+  await independent.getPopular();
 });
 test('restricted chapter error from HTTP 403 is not hidden by mirror retries', async () => {
   let calls = 0;

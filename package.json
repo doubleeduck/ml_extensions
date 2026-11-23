@@ -3,10 +3,16 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "engines": {"node": ">=22"},
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "test": "node --test tests/*.test.mjs",
     "build:host": "node tools/build_host_sdk.mjs"
   },
-  "devDependencies": {"core-js-pure": "3.50.0", "esbuild": "0.28.2"}
+  "devDependencies": {
+    "cheerio": "1.2.0",
+    "core-js-pure": "3.50.0",
+    "esbuild": "0.28.2"
+  }
 }
