@@ -3,6 +3,11 @@ import {finiteNumber, requireRecord, requireText} from '../core/http.mjs';
 
 const scalar = value => typeof value === 'string' || typeof value === 'number' ? String(value) : null;
 const nestedLabel = value => string(record(value).label) ?? string(record(value).name);
+export function supportsSite(item, siteId) {
+  // PHP encodes a sparse site_ids array as an object. Match its values, not keys.
+  const ids = Array.isArray(item.site_ids) ? item.site_ids : Object.values(record(item.site_ids));
+  return ids.some(value => Number(value) === siteId);
+}
 export function uniqueLabels(values) {
   const seen = new Set();
   return values.map(string).filter(value => value && !seen.has(value.toLowerCase()) && seen.add(value.toLowerCase()));
@@ -132,7 +137,7 @@ export function searchParameters(query) {
   return params;
 }
 export function parseFilters(constants, siteId) {
-  const options = (key,field = 'name') => records(constants[key]).filter(item => (item.site_ids ?? []).some(value => Number(value) === siteId))
+  const options = (key,field = 'name') => records(constants[key]).filter(item => supportsSite(item,siteId))
     .map(item => [scalar(item.id),scalar(item[field])]).filter(([id,label]) => id != null && label != null);
   return [filter('sort','sort','Sort by',[['views','Popularity'],['rate_avg','Rating'],['name','Name (A-Z)'],['rus_name','Russian name'],
     ['releaseDate','Release date'],['created_at','Date added'],['last_chapter_at','Latest update'],['chap_count','Chapter count']]),
